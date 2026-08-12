@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { api, ApiError, Project } from '@/lib/api';
 import { clearSession, getToken, getUser } from '@/lib/auth';
 
@@ -96,14 +97,16 @@ export default function ProjectsPage() {
         ) : (
           <ul className="space-y-2">
             {projects.map((project) => (
-              <li
-                key={project._id}
-                className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-100"
-              >
-                <p className="font-medium text-gray-900">{project.name}</p>
-                <p className="text-xs text-gray-400">
-                  Tạo lúc {new Date(project.createdAt).toLocaleString()}
-                </p>
+              <li key={project._id}>
+                <Link
+                  href={`/projects/${project._id}`}
+                  className="block rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-100 hover:ring-blue-300"
+                >
+                  <p className="font-medium text-gray-900">{project.name}</p>
+                  <p className="text-xs text-gray-400">
+                    Tạo lúc {new Date(project.createdAt).toLocaleString()}
+                  </p>
+                </Link>
               </li>
             ))}
           </ul>

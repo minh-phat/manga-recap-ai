@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Collection, Db, ObjectId } from 'mongodb';
 import { MONGO_DB } from '../database/database.providers';
 import { Project } from './project.entity';
@@ -26,5 +26,16 @@ export class ProjectsService {
       .find({ ownerId: new ObjectId(ownerId) })
       .sort({ createdAt: -1 })
       .toArray();
+  }
+
+  async findOneByOwner(id: string, ownerId: string): Promise<Project> {
+    const project = await this.collection.findOne({
+      _id: new ObjectId(id),
+      ownerId: new ObjectId(ownerId),
+    });
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    return project;
   }
 }

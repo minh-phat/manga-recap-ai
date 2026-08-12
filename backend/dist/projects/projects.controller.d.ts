@@ -11,5 +11,6 @@ export declare class ProjectsController {
     constructor(projectsService: ProjectsService);
     create(dto: CreateProjectDto, req: AuthedRequest): Promise<import("./project.entity").Project>;
     findAll(req: AuthedRequest): Promise<import("./project.entity").Project[]>;
+    findOne(id: string, req: AuthedRequest): Promise<import("./project.entity").Project>;
 }
 export {};

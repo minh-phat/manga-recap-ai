@@ -28,6 +28,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+    throw new ApiError(message || `Request failed with status ${res.status}`);
+  }
+
+  return res.json();
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -46,6 +66,20 @@ export interface Project {
   createdAt: string;
 }
 
+export type PageStatus = 'uploaded' | 'segmenting' | 'segmented' | 'failed';
+
+export interface Page {
+  _id: string;
+  projectId: string;
+  pageIndex: number;
+  imageUrl: string;
+  width: number;
+  height: number;
+  panelCount: number;
+  status: PageStatus;
+  createdAt: string;
+}
+
 export const api = {
   register: (data: { email: string; password: string; name: string }) =>
     request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
@@ -57,4 +91,14 @@ export const api = {
 
   createProject: (name: string) =>
     request<Project>('/projects', { method: 'POST', body: JSON.stringify({ name }) }),
+
+  getProject: (id: string) => request<Project>(`/projects/${id}`),
+
+  getProjectPages: (projectId: string) => request<Page[]>(`/projects/${projectId}/pages`),
+
+  uploadPage: (projectId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return uploadRequest<Page>(`/projects/${projectId}/pages`, formData);
+  },
 };

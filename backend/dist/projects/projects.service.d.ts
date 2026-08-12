@@ -6,4 +6,5 @@ export declare class ProjectsService {
     constructor(db: Db);
     create(name: string, ownerId: string): Promise<Project>;
     findAllByOwner(ownerId: string): Promise<Project[]>;
+    findOneByOwner(id: string, ownerId: string): Promise<Project>;
 }

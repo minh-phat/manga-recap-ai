@@ -15,6 +15,8 @@ const database_module_1 = require("./database/database.module");
 const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const projects_module_1 = require("./projects/projects.module");
+const storage_module_1 = require("./storage/storage.module");
+const pages_module_1 = require("./pages/pages.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -23,9 +25,11 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             database_module_1.DatabaseModule,
+            storage_module_1.StorageModule,
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
             projects_module_1.ProjectsModule,
+            pages_module_1.PagesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

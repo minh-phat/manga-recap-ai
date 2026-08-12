@@ -38,6 +38,16 @@ let ProjectsService = class ProjectsService {
             .sort({ createdAt: -1 })
             .toArray();
     }
+    async findOneByOwner(id, ownerId) {
+        const project = await this.collection.findOne({
+            _id: new mongodb_1.ObjectId(id),
+            ownerId: new mongodb_1.ObjectId(ownerId),
+        });
+        if (!project) {
+            throw new common_1.NotFoundException('Project not found');
+        }
+        return project;
+    }
 };
 exports.ProjectsService = ProjectsService;
 exports.ProjectsService = ProjectsService = __decorate([
