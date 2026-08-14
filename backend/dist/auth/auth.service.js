@@ -54,8 +54,8 @@ let AuthService = class AuthService {
         this.usersService = usersService;
         this.jwtService = jwtService;
     }
-    buildToken(userId, email) {
-        return this.jwtService.sign({ sub: userId, email });
+    buildToken(userId, email, role) {
+        return this.jwtService.sign({ sub: userId, email, role });
     }
     async register(dto) {
         const existing = await this.usersService.findByEmail(dto.email);
@@ -67,12 +67,18 @@ let AuthService = class AuthService {
             email: dto.email,
             passwordHash,
             name: dto.name,
+            role: 'user',
             createdAt: new Date(),
         });
-        const accessToken = this.buildToken(user._id.toString(), user.email);
+        const accessToken = this.buildToken(user._id.toString(), user.email, user.role);
         return {
             accessToken,
-            user: { id: user._id.toString(), email: user.email, name: user.name },
+            user: {
+                id: user._id.toString(),
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            },
         };
     }
     async login(dto) {
@@ -84,10 +90,16 @@ let AuthService = class AuthService {
         if (!isValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const accessToken = this.buildToken(user._id.toString(), user.email);
+        const role = user.role ?? 'user';
+        const accessToken = this.buildToken(user._id.toString(), user.email, role);
         return {
             accessToken,
-            user: { id: user._id.toString(), email: user.email, name: user.name },
+            user: {
+                id: user._id.toString(),
+                email: user.email,
+                name: user.name,
+                role,
+            },
         };
     }
 };

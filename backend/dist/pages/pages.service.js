@@ -38,6 +38,9 @@ let PagesService = class PagesService {
             .sort({ pageIndex: 1 })
             .toArray();
     }
+    findById(id) {
+        return this.collection.findOne({ _id: new mongodb_1.ObjectId(id) });
+    }
     async create(projectId, file) {
         const nextIndex = await this.collection.countDocuments({
             projectId: new mongodb_1.ObjectId(projectId),

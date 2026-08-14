@@ -7,5 +7,6 @@ import { PagesService } from './pages.service';
   imports: [ProjectsModule],
   controllers: [PagesController],
   providers: [PagesService],
+  exports: [PagesService],
 })
 export class PagesModule {}

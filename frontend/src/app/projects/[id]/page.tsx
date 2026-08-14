@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError, Page, PageStatus, Project } from '@/lib/api';
-import { getToken } from '@/lib/auth';
+import { getToken, isAdmin } from '@/lib/auth';
 
 const STATUS_LABEL: Record<PageStatus, string> = {
   uploaded: 'Đã tải lên',
@@ -32,6 +32,9 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,12 +81,42 @@ export default function ProjectDetailPage() {
     }
   }
 
+  function toggleSelect(pageId: string) {
+    setSelectedIds((prev) =>
+      prev.includes(pageId) ? prev.filter((id) => id !== pageId) : [...prev, pageId],
+    );
+  }
+
+  async function handleGenerateRecap() {
+    if (selectedIds.length === 0) return;
+    setGenerating(true);
+    setGenerateError(null);
+    try {
+      const orderedIds = pages
+        .filter((page) => selectedIds.includes(page._id))
+        .map((page) => page._id);
+      const job = await api.createRecapJob(projectId, orderedIds);
+      router.push(`/projects/${projectId}/recap/${job._id}`);
+    } catch (err) {
+      setGenerateError(err instanceof ApiError ? err.message : 'Không thể tạo recap');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="mx-auto max-w-4xl">
-        <Link href="/projects" className="mb-4 inline-block text-sm text-gray-600 hover:underline">
-          ← Quay lại danh sách
-        </Link>
+        <div className="mb-4 flex items-center justify-between">
+          <Link href="/projects" className="inline-block text-sm text-gray-600 hover:underline">
+            ← Quay lại danh sách
+          </Link>
+          {isAdmin() && (
+            <Link href="/admin/ai-models" className="text-sm text-blue-600 hover:underline">
+              Quản trị AI model
+            </Link>
+          )}
+        </div>
 
         {loading ? (
           <p className="text-sm text-gray-500">Đang tải...</p>
@@ -119,17 +152,40 @@ export default function ProjectDetailPage() {
             {pages.length === 0 ? (
               <p className="text-sm text-gray-500">Chưa có ảnh nào.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                {pages.map((page) => (
+              <>
+                <div className="mb-4 flex items-center gap-3 rounded-lg bg-white p-4 shadow">
+                  <span className="text-sm text-gray-700">
+                    Đã chọn {selectedIds.length} trang
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleGenerateRecap}
+                    disabled={selectedIds.length === 0 || generating}
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {generating ? 'Đang tạo...' : 'Tạo recap'}
+                  </button>
+                  {generateError && <p className="text-sm text-red-600">{generateError}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                  {pages.map((page) => (
                   <div
                     key={page._id}
-                    className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-100"
+                    className={`overflow-hidden rounded-lg bg-white shadow-sm ring-1 ${selectedIds.includes(page._id) ? 'ring-blue-500' : 'ring-gray-100'}`}
                   >
-                    <img
-                      src={page.imageUrl}
-                      alt={`Trang ${page.pageIndex}`}
-                      className="h-40 w-full object-cover"
-                    />
+                    <div className="relative">
+                      <img
+                        src={page.imageUrl}
+                        alt={`Trang ${page.pageIndex}`}
+                        className="h-40 w-full object-cover"
+                      />
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(page._id)}
+                        onChange={() => toggleSelect(page._id)}
+                        className="absolute top-2 left-2 h-5 w-5"
+                      />
+                    </div>
                     <div className="p-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-900">
@@ -146,8 +202,9 @@ export default function ProjectDetailPage() {
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </>
         ) : null}

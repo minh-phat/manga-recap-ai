@@ -27,6 +27,10 @@ export class PagesService {
       .toArray();
   }
 
+  findById(id: string): Promise<Page | null> {
+    return this.collection.findOne({ _id: new ObjectId(id) });
+  }
+
   async create(projectId: string, file: Express.Multer.File): Promise<Page> {
     const nextIndex = await this.collection.countDocuments({
       projectId: new ObjectId(projectId),

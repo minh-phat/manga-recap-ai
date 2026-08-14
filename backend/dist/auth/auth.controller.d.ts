@@ -10,6 +10,7 @@ export declare class AuthController {
             id: string;
             email: string;
             name: string;
+            role: import("../users/user.entity").UserRole;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -18,6 +19,7 @@ export declare class AuthController {
             id: string;
             email: string;
             name: string;
+            role: import("../users/user.entity").UserRole;
         };
     }>;
 }

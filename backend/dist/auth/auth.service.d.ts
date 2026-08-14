@@ -1,5 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { UserRole } from '../users/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 export declare class AuthService {
@@ -13,6 +14,7 @@ export declare class AuthService {
             id: string;
             email: string;
             name: string;
+            role: UserRole;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -21,6 +23,7 @@ export declare class AuthService {
             id: string;
             email: string;
             name: string;
+            role: UserRole;
         };
     }>;
 }

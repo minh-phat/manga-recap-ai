@@ -8,6 +8,10 @@ import { AuthModule } from './auth/auth.module';
 import { ProjectsModule } from './projects/projects.module';
 import { StorageModule } from './storage/storage.module';
 import { PagesModule } from './pages/pages.module';
+import { AiModelConfigsModule } from './ai-models/ai-model-configs.module';
+import { AiProvidersModule } from './ai-providers/ai-providers.module';
+import { PanelsModule } from './panels/panels.module';
+import { RecapModule } from './recap/recap.module';
 
 @Module({
   imports: [
@@ -18,6 +22,10 @@ import { PagesModule } from './pages/pages.module';
     AuthModule,
     ProjectsModule,
     PagesModule,
+    AiModelConfigsModule,
+    AiProvidersModule,
+    PanelsModule,
+    RecapModule,
   ],
   controllers: [AppController],
   providers: [AppService],

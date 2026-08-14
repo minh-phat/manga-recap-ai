@@ -48,10 +48,13 @@ async function uploadRequest<T>(path: string, formData: FormData): Promise<T> {
   return res.json();
 }
 
+export type UserRole = 'user' | 'admin';
+
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  role: UserRole;
 }
 
 export interface AuthResponse {
@@ -80,6 +83,52 @@ export interface Page {
   createdAt: string;
 }
 
+export type AiProvider = 'openrouter' | 'gemini' | 'anthropic';
+export type AiTaskType = 'panel_detection' | 'narration';
+
+export interface AiModelConfig {
+  _id: string;
+  label: string;
+  provider: AiProvider;
+  modelId: string;
+  taskType: AiTaskType;
+  apiKeyMasked: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RecapJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface RecapJob {
+  _id: string;
+  projectId: string;
+  pageIds: string[];
+  status: RecapJobStatus;
+  currentStep?: string;
+  error?: string;
+  scriptId?: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+export interface RecapScriptEntry {
+  panelId: string;
+  pageId: string;
+  order: number;
+  croppedImageUrl: string;
+  narrationText: string;
+}
+
+export interface RecapScript {
+  _id: string;
+  projectId: string;
+  jobId: string;
+  entries: RecapScriptEntry[];
+  createdAt: string;
+}
+
 export const api = {
   register: (data: { email: string; password: string; name: string }) =>
     request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
@@ -101,4 +150,43 @@ export const api = {
     formData.append('file', file);
     return uploadRequest<Page>(`/projects/${projectId}/pages`, formData);
   },
+
+  createRecapJob: (projectId: string, pageIds: string[]) =>
+    request<RecapJob>(`/projects/${projectId}/recap-jobs`, {
+      method: 'POST',
+      body: JSON.stringify({ pageIds }),
+    }),
+
+  getRecapJob: (projectId: string, jobId: string) =>
+    request<RecapJob>(`/projects/${projectId}/recap-jobs/${jobId}`),
+
+  getRecapScript: (projectId: string, scriptId: string) =>
+    request<RecapScript>(`/projects/${projectId}/recap-scripts/${scriptId}`),
+
+  listAiModelConfigs: (taskType?: AiTaskType) =>
+    request<AiModelConfig[]>(`/ai-model-configs${taskType ? `?taskType=${taskType}` : ''}`),
+
+  createAiModelConfig: (data: {
+    label: string;
+    provider: AiProvider;
+    modelId: string;
+    taskType: AiTaskType;
+    apiKey: string;
+  }) =>
+    request<AiModelConfig>('/ai-model-configs', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateAiModelConfig: (
+    id: string,
+    data: Partial<{ label: string; modelId: string; apiKey: string }>,
+  ) =>
+    request<AiModelConfig>(`/ai-model-configs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteAiModelConfig: (id: string) =>
+    request<void>(`/ai-model-configs/${id}`, { method: 'DELETE' }),
+
+  activateAiModelConfig: (id: string) =>
+    request<AiModelConfig>(`/ai-model-configs/${id}/activate`, { method: 'POST' }),
 };

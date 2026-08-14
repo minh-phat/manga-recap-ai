@@ -23,3 +23,7 @@ export function getUser(): AuthUser | null {
   const raw = localStorage.getItem(USER_KEY);
   return raw ? JSON.parse(raw) : null;
 }
+
+export function isAdmin(): boolean {
+  return getUser()?.role === 'admin';
+}

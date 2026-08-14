@@ -9,5 +9,6 @@ export declare class PagesService {
     private readonly collection;
     constructor(db: Db, r2: S3Client, configService: ConfigService);
     findAllByProject(projectId: string): Promise<Page[]>;
+    findById(id: string): Promise<Page | null>;
     create(projectId: string, file: Express.Multer.File): Promise<Page>;
 }

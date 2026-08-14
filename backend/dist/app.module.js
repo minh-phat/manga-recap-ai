@@ -17,6 +17,10 @@ const auth_module_1 = require("./auth/auth.module");
 const projects_module_1 = require("./projects/projects.module");
 const storage_module_1 = require("./storage/storage.module");
 const pages_module_1 = require("./pages/pages.module");
+const ai_model_configs_module_1 = require("./ai-models/ai-model-configs.module");
+const ai_providers_module_1 = require("./ai-providers/ai-providers.module");
+const panels_module_1 = require("./panels/panels.module");
+const recap_module_1 = require("./recap/recap.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -30,6 +34,10 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             projects_module_1.ProjectsModule,
             pages_module_1.PagesModule,
+            ai_model_configs_module_1.AiModelConfigsModule,
+            ai_providers_module_1.AiProvidersModule,
+            panels_module_1.PanelsModule,
+            recap_module_1.RecapModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

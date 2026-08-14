@@ -19,6 +19,7 @@ exports.PagesModule = PagesModule = __decorate([
         imports: [projects_module_1.ProjectsModule],
         controllers: [pages_controller_1.PagesController],
         providers: [pages_service_1.PagesService],
+        exports: [pages_service_1.PagesService],
     })
 ], PagesModule);
 //# sourceMappingURL=pages.module.js.map

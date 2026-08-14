@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { UserRole } from '../users/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -16,8 +17,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  private buildToken(userId: string, email: string) {
-    return this.jwtService.sign({ sub: userId, email });
+  private buildToken(userId: string, email: string, role: UserRole) {
+    return this.jwtService.sign({ sub: userId, email, role });
   }
 
   async register(dto: RegisterDto) {
@@ -31,13 +32,23 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       name: dto.name,
+      role: 'user',
       createdAt: new Date(),
     });
 
-    const accessToken = this.buildToken(user._id!.toString(), user.email);
+    const accessToken = this.buildToken(
+      user._id!.toString(),
+      user.email,
+      user.role,
+    );
     return {
       accessToken,
-      user: { id: user._id!.toString(), email: user.email, name: user.name },
+      user: {
+        id: user._id!.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     };
   }
 
@@ -52,10 +63,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken = this.buildToken(user._id!.toString(), user.email);
+    const role: UserRole = user.role ?? 'user';
+    const accessToken = this.buildToken(user._id!.toString(), user.email, role);
     return {
       accessToken,
-      user: { id: user._id!.toString(), email: user.email, name: user.name },
+      user: {
+        id: user._id!.toString(),
+        email: user.email,
+        name: user.name,
+        role,
+      },
     };
   }
 }
