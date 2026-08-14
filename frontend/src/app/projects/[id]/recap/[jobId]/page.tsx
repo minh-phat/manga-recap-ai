@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, ApiError, RecapJob, RecapScript } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import VideoGenerator from './VideoGenerator';
 
 const STATUS_LABEL: Record<RecapJob['status'], string> = {
   queued: 'Đang chờ',
@@ -82,6 +83,8 @@ export default function RecapJobPage() {
             {job.error && <p className="mt-1 text-sm text-red-600">{job.error}</p>}
           </div>
         )}
+
+        {script && <VideoGenerator projectId={projectId} scriptId={script._id} />}
 
         {script && (
           <div className="space-y-6">

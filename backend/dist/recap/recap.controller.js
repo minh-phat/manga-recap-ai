@@ -17,15 +17,19 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const projects_service_1 = require("../projects/projects.service");
 const create_recap_job_dto_1 = require("./dto/create-recap-job.dto");
+const create_recap_video_job_dto_1 = require("./dto/create-recap-video-job.dto");
 const recap_jobs_service_1 = require("./recap-jobs.service");
 const recap_scripts_service_1 = require("./recap-scripts.service");
+const recap_video_jobs_service_1 = require("./recap-video-jobs.service");
 let RecapController = class RecapController {
     recapJobsService;
     recapScriptsService;
+    recapVideoJobsService;
     projectsService;
-    constructor(recapJobsService, recapScriptsService, projectsService) {
+    constructor(recapJobsService, recapScriptsService, recapVideoJobsService, projectsService) {
         this.recapJobsService = recapJobsService;
         this.recapScriptsService = recapScriptsService;
+        this.recapVideoJobsService = recapVideoJobsService;
         this.projectsService = projectsService;
     }
     async create(projectId, dto, req) {
@@ -43,6 +47,14 @@ let RecapController = class RecapController {
     async findScript(projectId, scriptId, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
         return this.recapScriptsService.findOne(scriptId);
+    }
+    async createVideoJob(projectId, scriptId, dto, req) {
+        await this.projectsService.findOneByOwner(projectId, req.user.userId);
+        return this.recapVideoJobsService.createJob(projectId, scriptId, dto.includeCaptions, req.user.userId);
+    }
+    async findVideoJob(projectId, videoJobId, req) {
+        await this.projectsService.findOneByOwner(projectId, req.user.userId);
+        return this.recapVideoJobsService.findOne(videoJobId);
     }
 };
 exports.RecapController = RecapController;
@@ -81,11 +93,31 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], RecapController.prototype, "findScript", null);
+__decorate([
+    (0, common_1.Post)('recap-scripts/:scriptId/video-jobs'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.Param)('scriptId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, create_recap_video_job_dto_1.CreateRecapVideoJobDto, Object]),
+    __metadata("design:returntype", Promise)
+], RecapController.prototype, "createVideoJob", null);
+__decorate([
+    (0, common_1.Get)('video-jobs/:videoJobId'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.Param)('videoJobId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], RecapController.prototype, "findVideoJob", null);
 exports.RecapController = RecapController = __decorate([
     (0, common_1.Controller)('projects/:projectId'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [recap_jobs_service_1.RecapJobsService,
         recap_scripts_service_1.RecapScriptsService,
+        recap_video_jobs_service_1.RecapVideoJobsService,
         projects_service_1.ProjectsService])
 ], RecapController);
 //# sourceMappingURL=recap.controller.js.map

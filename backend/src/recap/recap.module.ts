@@ -6,10 +6,11 @@ import { AiProvidersModule } from '../ai-providers/ai-providers.module';
 import { RecapController } from './recap.controller';
 import { RecapJobsService } from './recap-jobs.service';
 import { RecapScriptsService } from './recap-scripts.service';
+import { RecapVideoJobsService } from './recap-video-jobs.service';
 
 @Module({
   imports: [ProjectsModule, PagesModule, PanelsModule, AiProvidersModule],
   controllers: [RecapController],
-  providers: [RecapJobsService, RecapScriptsService],
+  providers: [RecapJobsService, RecapScriptsService, RecapVideoJobsService],
 })
 export class RecapModule {}

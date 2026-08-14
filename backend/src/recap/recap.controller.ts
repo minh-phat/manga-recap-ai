@@ -10,8 +10,10 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService } from '../projects/projects.service';
 import { CreateRecapJobDto } from './dto/create-recap-job.dto';
+import { CreateRecapVideoJobDto } from './dto/create-recap-video-job.dto';
 import { RecapJobsService } from './recap-jobs.service';
 import { RecapScriptsService } from './recap-scripts.service';
+import { RecapVideoJobsService } from './recap-video-jobs.service';
 
 interface AuthedRequest {
   user: { userId: string; email: string };
@@ -23,6 +25,7 @@ export class RecapController {
   constructor(
     private readonly recapJobsService: RecapJobsService,
     private readonly recapScriptsService: RecapScriptsService,
+    private readonly recapVideoJobsService: RecapVideoJobsService,
     private readonly projectsService: ProjectsService,
   ) {}
 
@@ -67,5 +70,31 @@ export class RecapController {
   ) {
     await this.projectsService.findOneByOwner(projectId, req.user.userId);
     return this.recapScriptsService.findOne(scriptId);
+  }
+
+  @Post('recap-scripts/:scriptId/video-jobs')
+  async createVideoJob(
+    @Param('projectId') projectId: string,
+    @Param('scriptId') scriptId: string,
+    @Body() dto: CreateRecapVideoJobDto,
+    @Req() req: AuthedRequest,
+  ) {
+    await this.projectsService.findOneByOwner(projectId, req.user.userId);
+    return this.recapVideoJobsService.createJob(
+      projectId,
+      scriptId,
+      dto.includeCaptions,
+      req.user.userId,
+    );
+  }
+
+  @Get('video-jobs/:videoJobId')
+  async findVideoJob(
+    @Param('projectId') projectId: string,
+    @Param('videoJobId') videoJobId: string,
+    @Req() req: AuthedRequest,
+  ) {
+    await this.projectsService.findOneByOwner(projectId, req.user.userId);
+    return this.recapVideoJobsService.findOne(videoJobId);
   }
 }

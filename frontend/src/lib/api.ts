@@ -129,6 +129,22 @@ export interface RecapScript {
   createdAt: string;
 }
 
+export type RecapVideoJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface RecapVideoJob {
+  _id: string;
+  projectId: string;
+  scriptId: string;
+  includeCaptions: boolean;
+  status: RecapVideoJobStatus;
+  currentStep?: string;
+  error?: string;
+  videoUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
 export const api = {
   register: (data: { email: string; password: string; name: string }) =>
     request<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
@@ -162,6 +178,15 @@ export const api = {
 
   getRecapScript: (projectId: string, scriptId: string) =>
     request<RecapScript>(`/projects/${projectId}/recap-scripts/${scriptId}`),
+
+  createRecapVideoJob: (projectId: string, scriptId: string, includeCaptions: boolean) =>
+    request<RecapVideoJob>(`/projects/${projectId}/recap-scripts/${scriptId}/video-jobs`, {
+      method: 'POST',
+      body: JSON.stringify({ includeCaptions }),
+    }),
+
+  getRecapVideoJob: (projectId: string, videoJobId: string) =>
+    request<RecapVideoJob>(`/projects/${projectId}/video-jobs/${videoJobId}`),
 
   listAiModelConfigs: (taskType?: AiTaskType) =>
     request<AiModelConfig[]>(`/ai-model-configs${taskType ? `?taskType=${taskType}` : ''}`),
