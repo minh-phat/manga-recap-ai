@@ -17,7 +17,12 @@ export interface GenerateNarrationInput {
     storySoFar: string;
     pageIndex: number;
 }
+export interface TranslateTextsInput {
+    texts: string[];
+    targetLanguage: string;
+}
 export interface AiProviderStrategy {
     detectPanels(input: DetectPanelsInput): Promise<PanelBox[]>;
     generateNarration(input: GenerateNarrationInput): Promise<string[]>;
+    translateTexts(input: TranslateTextsInput): Promise<string[]>;
 }

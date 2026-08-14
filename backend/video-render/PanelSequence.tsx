@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Img, Sequence, useCurrentFrame, interpolate } from 'remotion';
+import { AbsoluteFill, Audio, Img, Sequence, useCurrentFrame, interpolate } from 'remotion';
 import {
   kenBurnsFrameAt,
   pickKenBurnsEffect,
@@ -9,6 +9,7 @@ export interface PanelSequenceProps {
   panelId: string;
   imageUrl: string;
   narrationText: string;
+  audioUrl?: string;
   includeCaptions: boolean;
   from: number;
   durationInFrames: number;
@@ -18,6 +19,7 @@ function PanelFrame({
   panelId,
   imageUrl,
   narrationText,
+  audioUrl,
   includeCaptions,
   durationInFrames,
 }: Omit<PanelSequenceProps, 'from'>) {
@@ -34,6 +36,7 @@ function PanelFrame({
 
   return (
     <AbsoluteFill style={{ backgroundColor: 'black', overflow: 'hidden' }}>
+      {audioUrl ? <Audio src={audioUrl} /> : null}
       <Img
         src={imageUrl}
         style={{

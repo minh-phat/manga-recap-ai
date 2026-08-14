@@ -12,6 +12,7 @@ const projects_module_1 = require("../projects/projects.module");
 const pages_module_1 = require("../pages/pages.module");
 const panels_module_1 = require("../panels/panels.module");
 const ai_providers_module_1 = require("../ai-providers/ai-providers.module");
+const edge_tts_client_1 = require("../tts/edge-tts.client");
 const recap_controller_1 = require("./recap.controller");
 const recap_jobs_service_1 = require("./recap-jobs.service");
 const recap_scripts_service_1 = require("./recap-scripts.service");
@@ -23,7 +24,12 @@ exports.RecapModule = RecapModule = __decorate([
     (0, common_1.Module)({
         imports: [projects_module_1.ProjectsModule, pages_module_1.PagesModule, panels_module_1.PanelsModule, ai_providers_module_1.AiProvidersModule],
         controllers: [recap_controller_1.RecapController],
-        providers: [recap_jobs_service_1.RecapJobsService, recap_scripts_service_1.RecapScriptsService, recap_video_jobs_service_1.RecapVideoJobsService],
+        providers: [
+            recap_jobs_service_1.RecapJobsService,
+            recap_scripts_service_1.RecapScriptsService,
+            recap_video_jobs_service_1.RecapVideoJobsService,
+            edge_tts_client_1.EdgeTtsClient,
+        ],
     })
 ], RecapModule);
 //# sourceMappingURL=recap.module.js.map

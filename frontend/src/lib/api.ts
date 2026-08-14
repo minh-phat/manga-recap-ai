@@ -131,11 +131,27 @@ export interface RecapScript {
 
 export type RecapVideoJobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
+export interface RecapLanguage {
+  code: string;
+  label: string;
+}
+
+export const RECAP_LANGUAGES: RecapLanguage[] = [
+  { code: 'vi-VN', label: 'Tiếng Việt' },
+  { code: 'en-US', label: 'English' },
+  { code: 'ja-JP', label: '日本語' },
+  { code: 'ko-KR', label: '한국어' },
+  { code: 'zh-CN', label: '中文' },
+  { code: 'fr-FR', label: 'Français' },
+  { code: 'es-ES', label: 'Español' },
+];
+
 export interface RecapVideoJob {
   _id: string;
   projectId: string;
   scriptId: string;
   includeCaptions: boolean;
+  language: string;
   status: RecapVideoJobStatus;
   currentStep?: string;
   error?: string;
@@ -179,10 +195,15 @@ export const api = {
   getRecapScript: (projectId: string, scriptId: string) =>
     request<RecapScript>(`/projects/${projectId}/recap-scripts/${scriptId}`),
 
-  createRecapVideoJob: (projectId: string, scriptId: string, includeCaptions: boolean) =>
+  createRecapVideoJob: (
+    projectId: string,
+    scriptId: string,
+    includeCaptions: boolean,
+    language: string,
+  ) =>
     request<RecapVideoJob>(`/projects/${projectId}/recap-scripts/${scriptId}/video-jobs`, {
       method: 'POST',
-      body: JSON.stringify({ includeCaptions }),
+      body: JSON.stringify({ includeCaptions, language }),
     }),
 
   getRecapVideoJob: (projectId: string, videoJobId: string) =>

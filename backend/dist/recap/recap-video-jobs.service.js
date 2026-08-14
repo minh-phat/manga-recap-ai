@@ -55,23 +55,31 @@ const fs = __importStar(require("fs"));
 const os = __importStar(require("os"));
 const path = __importStar(require("path"));
 const uuid_1 = require("uuid");
+const music_metadata_1 = require("music-metadata");
 const database_providers_1 = require("../database/database.providers");
 const r2_providers_1 = require("../storage/r2.providers");
+const ai_provider_factory_1 = require("../ai-providers/ai-provider.factory");
+const edge_tts_client_1 = require("../tts/edge-tts.client");
 const recap_scripts_service_1 = require("./recap-scripts.service");
 const duration_util_1 = require("./duration.util");
+const tts_languages_1 = require("./tts-languages");
 let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsService {
     db;
     r2;
     configService;
     recapScriptsService;
+    aiProviderFactory;
+    edgeTtsClient;
     logger = new common_1.Logger(RecapVideoJobsService_1.name);
     collection;
     bundleServeUrlPromise = null;
-    constructor(db, r2, configService, recapScriptsService) {
+    constructor(db, r2, configService, recapScriptsService, aiProviderFactory, edgeTtsClient) {
         this.db = db;
         this.r2 = r2;
         this.configService = configService;
         this.recapScriptsService = recapScriptsService;
+        this.aiProviderFactory = aiProviderFactory;
+        this.edgeTtsClient = edgeTtsClient;
         this.collection = this.db.collection('recapVideoJobs');
     }
     async findOne(id) {
@@ -81,12 +89,13 @@ let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsServic
         }
         return job;
     }
-    async createJob(projectId, scriptId, includeCaptions, createdBy) {
+    async createJob(projectId, scriptId, includeCaptions, language, createdBy) {
         const now = new Date();
         const job = {
             projectId: new mongodb_1.ObjectId(projectId),
             scriptId: new mongodb_1.ObjectId(scriptId),
             includeCaptions,
+            language,
             status: 'queued',
             createdBy: new mongodb_1.ObjectId(createdBy),
             createdAt: now,
@@ -122,12 +131,47 @@ let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsServic
                 currentStep: 'Đang chuẩn bị dữ liệu...',
             });
             const script = await this.recapScriptsService.findOne(job.scriptId.toString());
-            const entries = script.entries.map((entry) => ({
+            let entries = script.entries.map((entry) => ({
                 panelId: entry.panelId.toString(),
                 imageUrl: entry.croppedImageUrl,
                 narrationText: entry.narrationText,
+                audioUrl: undefined,
+                durationMs: undefined,
             }));
-            const timings = (0, duration_util_1.computeEntryTimings)(entries.map((e) => e.narrationText), duration_util_1.VIDEO_FPS);
+            await this.updateJob(jobObjectId, {
+                currentStep: 'Đang dịch nội dung...',
+            });
+            const narrationProvider = await this.aiProviderFactory.forTask('narration');
+            const translatedTexts = await narrationProvider.translateTexts({
+                texts: entries.map((e) => e.narrationText),
+                targetLanguage: job.language,
+            });
+            entries = entries.map((entry, index) => ({
+                ...entry,
+                narrationText: translatedTexts[index] ?? entry.narrationText,
+            }));
+            await this.updateJob(jobObjectId, {
+                currentStep: 'Đang tạo giọng đọc...',
+            });
+            const voice = (0, tts_languages_1.resolveEdgeVoice)(job.language);
+            for (const entry of entries) {
+                if (!entry.narrationText.trim()) {
+                    continue;
+                }
+                const audioBuffer = await this.edgeTtsClient.synthesize(entry.narrationText, voice);
+                const metadata = await (0, music_metadata_1.parseBuffer)(audioBuffer, 'audio/mpeg');
+                entry.durationMs = (metadata.format.duration ?? 0) * 1000;
+                const audioKey = `projects/${job.projectId.toString()}/recap-videos/audio/${(0, uuid_1.v4)()}.mp3`;
+                await this.r2.send(new client_s3_1.PutObjectCommand({
+                    Bucket: this.configService.get('R2_BUCKET_NAME'),
+                    Key: audioKey,
+                    Body: audioBuffer,
+                    ContentType: 'audio/mpeg',
+                }));
+                const publicUrl = (this.configService.get('R2_PUBLIC_URL') ?? '').replace(/\/$/, '');
+                entry.audioUrl = `${publicUrl}/${audioKey}`;
+            }
+            const timings = (0, duration_util_1.resolveEntryTimings)(entries, duration_util_1.VIDEO_FPS);
             const durationInFrames = (0, duration_util_1.computeTotalDurationInFrames)(timings);
             await this.updateJob(jobObjectId, {
                 currentStep: 'Đang render video...',
@@ -184,6 +228,8 @@ exports.RecapVideoJobsService = RecapVideoJobsService = RecapVideoJobsService_1 
     __metadata("design:paramtypes", [mongodb_1.Db,
         client_s3_1.S3Client,
         config_1.ConfigService,
-        recap_scripts_service_1.RecapScriptsService])
+        recap_scripts_service_1.RecapScriptsService,
+        ai_provider_factory_1.AiProviderFactory,
+        edge_tts_client_1.EdgeTtsClient])
 ], RecapVideoJobsService);
 //# sourceMappingURL=recap-video-jobs.service.js.map

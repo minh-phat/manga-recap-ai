@@ -2,8 +2,8 @@ import React from 'react';
 import { Composition } from 'remotion';
 import { RecapVideo, RecapVideoProps } from './RecapVideo';
 import {
-  computeEntryTimings,
   computeTotalDurationInFrames,
+  resolveEntryTimings,
   VIDEO_FPS,
 } from '../src/recap/duration.util';
 
@@ -25,10 +25,7 @@ export function RemotionRoot() {
       height={720}
       defaultProps={defaultProps}
       calculateMetadata={async ({ props }) => {
-        const timings = computeEntryTimings(
-          props.entries.map((e) => e.narrationText),
-          VIDEO_FPS,
-        );
+        const timings = resolveEntryTimings(props.entries, VIDEO_FPS);
         return {
           durationInFrames: Math.max(1, computeTotalDurationInFrames(timings)),
         };

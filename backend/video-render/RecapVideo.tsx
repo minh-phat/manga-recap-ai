@@ -1,12 +1,14 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { PanelSequence } from './PanelSequence';
-import { computeEntryTimings } from '../src/recap/duration.util';
+import { resolveEntryTimings } from '../src/recap/duration.util';
 
 export interface RecapVideoEntryInput {
   panelId: string;
   imageUrl: string;
   narrationText: string;
+  audioUrl?: string;
+  durationMs?: number;
 }
 
 export type RecapVideoProps = Record<string, unknown> & {
@@ -15,7 +17,7 @@ export type RecapVideoProps = Record<string, unknown> & {
 };
 
 export function RecapVideo({ entries, includeCaptions }: RecapVideoProps) {
-  const timings = computeEntryTimings(entries.map((e) => e.narrationText));
+  const timings = resolveEntryTimings(entries);
 
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
@@ -25,6 +27,7 @@ export function RecapVideo({ entries, includeCaptions }: RecapVideoProps) {
           panelId={entry.panelId}
           imageUrl={entry.imageUrl}
           narrationText={entry.narrationText}
+          audioUrl={entry.audioUrl}
           includeCaptions={includeCaptions}
           from={timings[index].from}
           durationInFrames={timings[index].durationInFrames}

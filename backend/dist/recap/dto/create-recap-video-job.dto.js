@@ -11,12 +11,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateRecapVideoJobDto = void 0;
 const class_validator_1 = require("class-validator");
+const tts_languages_1 = require("../tts-languages");
 class CreateRecapVideoJobDto {
     includeCaptions;
+    language;
 }
 exports.CreateRecapVideoJobDto = CreateRecapVideoJobDto;
 __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateRecapVideoJobDto.prototype, "includeCaptions", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(tts_languages_1.SUPPORTED_LANGUAGE_CODES),
+    __metadata("design:type", String)
+], CreateRecapVideoJobDto.prototype, "language", void 0);
 //# sourceMappingURL=create-recap-video-job.dto.js.map

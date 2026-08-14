@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, ApiError, RecapVideoJob } from '@/lib/api';
+import { api, ApiError, RECAP_LANGUAGES, RecapVideoJob } from '@/lib/api';
 
 const VIDEO_STATUS_LABEL: Record<RecapVideoJob['status'], string> = {
   queued: 'Đang chờ',
@@ -17,6 +17,7 @@ interface VideoGeneratorProps {
 
 export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorProps) {
   const [includeCaptions, setIncludeCaptions] = useState(true);
+  const [language, setLanguage] = useState('vi-VN');
   const [videoJob, setVideoJob] = useState<RecapVideoJob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -48,7 +49,7 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
   const handleGenerate = async () => {
     setError(null);
     try {
-      const created = await api.createRecapVideoJob(projectId, scriptId, includeCaptions);
+      const created = await api.createRecapVideoJob(projectId, scriptId, includeCaptions, language);
       setVideoJob(created);
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(() => void pollVideoJob(created._id), 2000);
@@ -69,6 +70,22 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
           onChange={(e) => setIncludeCaptions(e.target.checked)}
         />
         Bao gồm caption
+      </label>
+
+      <label className="mb-3 flex items-center gap-2 text-sm text-gray-700">
+        Ngôn ngữ đọc
+        <select
+          value={language}
+          disabled={isBusy}
+          onChange={(e) => setLanguage(e.target.value)}
+          className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+        >
+          {RECAP_LANGUAGES.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.label}
+            </option>
+          ))}
+        </select>
       </label>
 
       <button

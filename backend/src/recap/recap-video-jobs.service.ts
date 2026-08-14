@@ -6,11 +6,19 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';
+import { parseBuffer } from 'music-metadata';
 import { MONGO_DB } from '../database/database.providers';
 import { R2_CLIENT } from '../storage/r2.providers';
+import { AiProviderFactory } from '../ai-providers/ai-provider.factory';
+import { EdgeTtsClient } from '../tts/edge-tts.client';
 import { RecapVideoJob } from './recap-video-job.entity';
 import { RecapScriptsService } from './recap-scripts.service';
-import { computeEntryTimings, computeTotalDurationInFrames, VIDEO_FPS } from './duration.util';
+import {
+  computeTotalDurationInFrames,
+  resolveEntryTimings,
+  VIDEO_FPS,
+} from './duration.util';
+import { resolveEdgeVoice } from './tts-languages';
 
 @Injectable()
 export class RecapVideoJobsService {
@@ -23,6 +31,8 @@ export class RecapVideoJobsService {
     @Inject(R2_CLIENT) private readonly r2: S3Client,
     private readonly configService: ConfigService,
     private readonly recapScriptsService: RecapScriptsService,
+    private readonly aiProviderFactory: AiProviderFactory,
+    private readonly edgeTtsClient: EdgeTtsClient,
   ) {
     this.collection = this.db.collection<RecapVideoJob>('recapVideoJobs');
   }
@@ -39,6 +49,7 @@ export class RecapVideoJobsService {
     projectId: string,
     scriptId: string,
     includeCaptions: boolean,
+    language: string,
     createdBy: string,
   ): Promise<RecapVideoJob> {
     const now = new Date();
@@ -46,6 +57,7 @@ export class RecapVideoJobsService {
       projectId: new ObjectId(projectId),
       scriptId: new ObjectId(scriptId),
       includeCaptions,
+      language,
       status: 'queued',
       createdBy: new ObjectId(createdBy),
       createdAt: now,
@@ -97,16 +109,62 @@ export class RecapVideoJobsService {
         job.scriptId.toString(),
       );
 
-      const entries = script.entries.map((entry) => ({
+      let entries = script.entries.map((entry) => ({
         panelId: entry.panelId.toString(),
         imageUrl: entry.croppedImageUrl,
         narrationText: entry.narrationText,
+        audioUrl: undefined as string | undefined,
+        durationMs: undefined as number | undefined,
       }));
 
-      const timings = computeEntryTimings(
-        entries.map((e) => e.narrationText),
-        VIDEO_FPS,
+      await this.updateJob(jobObjectId, {
+        currentStep: 'Đang dịch nội dung...',
+      });
+
+      const narrationProvider = await this.aiProviderFactory.forTask(
+        'narration',
       );
+      const translatedTexts = await narrationProvider.translateTexts({
+        texts: entries.map((e) => e.narrationText),
+        targetLanguage: job.language,
+      });
+      entries = entries.map((entry, index) => ({
+        ...entry,
+        narrationText: translatedTexts[index] ?? entry.narrationText,
+      }));
+
+      await this.updateJob(jobObjectId, {
+        currentStep: 'Đang tạo giọng đọc...',
+      });
+
+      const voice = resolveEdgeVoice(job.language);
+      for (const entry of entries) {
+        if (!entry.narrationText.trim()) {
+          continue;
+        }
+        const audioBuffer = await this.edgeTtsClient.synthesize(
+          entry.narrationText,
+          voice,
+        );
+        const metadata = await parseBuffer(audioBuffer, 'audio/mpeg');
+        entry.durationMs = (metadata.format.duration ?? 0) * 1000;
+
+        const audioKey = `projects/${job.projectId.toString()}/recap-videos/audio/${uuid()}.mp3`;
+        await this.r2.send(
+          new PutObjectCommand({
+            Bucket: this.configService.get<string>('R2_BUCKET_NAME'),
+            Key: audioKey,
+            Body: audioBuffer,
+            ContentType: 'audio/mpeg',
+          }),
+        );
+        const publicUrl = (
+          this.configService.get<string>('R2_PUBLIC_URL') ?? ''
+        ).replace(/\/$/, '');
+        entry.audioUrl = `${publicUrl}/${audioKey}`;
+      }
+
+      const timings = resolveEntryTimings(entries, VIDEO_FPS);
       const durationInFrames = computeTotalDurationInFrames(timings);
 
       await this.updateJob(jobObjectId, {

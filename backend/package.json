@@ -34,6 +34,8 @@
     "class-validator": "^0.15.1",
     "image-size": "^2.0.2",
     "mongodb": "^7.5.0",
+    "msedge-tts": "^2.0.7",
+    "music-metadata": "^11.14.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "react": "^18.3.1",

@@ -84,6 +84,7 @@ export class RecapController {
       projectId,
       scriptId,
       dto.includeCaptions,
+      dto.language,
       req.user.userId,
     );
   }

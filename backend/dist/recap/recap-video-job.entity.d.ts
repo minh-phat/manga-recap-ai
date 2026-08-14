@@ -5,6 +5,7 @@ export interface RecapVideoJob {
     projectId: ObjectId;
     scriptId: ObjectId;
     includeCaptions: boolean;
+    language: string;
     status: RecapVideoJobStatus;
     currentStep?: string;
     error?: string;

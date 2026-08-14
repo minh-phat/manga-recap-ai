@@ -38,3 +38,41 @@ export function computeEntryTimings(
 export function computeTotalDurationInFrames(timings: EntryTiming[]): number {
   return timings.reduce((sum, timing) => sum + timing.durationInFrames, 0);
 }
+
+export function computeEntryTimingsFromDurations(
+  durationsMs: number[],
+  fps: number = VIDEO_FPS,
+): EntryTiming[] {
+  let from = 0;
+  return durationsMs.map((durationMs) => {
+    const clampedMs = Math.min(
+      MAX_ENTRY_DURATION_MS,
+      Math.max(MIN_ENTRY_DURATION_MS, durationMs),
+    );
+    const durationInFrames = Math.round((clampedMs / 1000) * fps);
+    const timing: EntryTiming = { from, durationInFrames };
+    from += durationInFrames;
+    return timing;
+  });
+}
+
+export interface TimedEntry {
+  narrationText: string;
+  durationMs?: number;
+}
+
+export function resolveEntryTimings(
+  entries: TimedEntry[],
+  fps: number = VIDEO_FPS,
+): EntryTiming[] {
+  if (entries.length > 0 && entries.every((e) => typeof e.durationMs === 'number')) {
+    return computeEntryTimingsFromDurations(
+      entries.map((e) => e.durationMs as number),
+      fps,
+    );
+  }
+  return computeEntryTimings(
+    entries.map((e) => e.narrationText),
+    fps,
+  );
+}

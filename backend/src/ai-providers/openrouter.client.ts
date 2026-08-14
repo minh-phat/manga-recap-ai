@@ -4,6 +4,7 @@ import {
   DetectPanelsInput,
   GenerateNarrationInput,
   PanelBox,
+  TranslateTextsInput,
 } from './ai-provider.interface';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -131,5 +132,40 @@ export class OpenRouterClient implements AiProviderStrategy {
       );
     }
     return parsed.narrations;
+  }
+
+  async translateTexts({
+    texts,
+    targetLanguage,
+  }: TranslateTextsInput): Promise<string[]> {
+    if (texts.length === 0) {
+      return [];
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content:
+          'You are a professional translator. Translate each given line into the target language, ' +
+          'preserving meaning, tone, and line order exactly. Do not add or remove lines.',
+      },
+      {
+        role: 'user',
+        content:
+          `Translate the following ${texts.length} lines into "${targetLanguage}". ` +
+          `Respond ONLY with JSON of the shape {"translations":["line 1", "line 2", ...]} ` +
+          `with exactly ${texts.length} entries, in the same order as the input lines.\n\n` +
+          texts.map((text, i) => `${i + 1}. ${text}`).join('\n'),
+      },
+    ];
+
+    const raw = await this.chat(messages);
+    const parsed = JSON.parse(raw) as { translations?: string[] };
+    if (!Array.isArray(parsed.translations)) {
+      throw new BadGatewayException(
+        'OpenRouter translation returned no translations array',
+      );
+    }
+    return parsed.translations;
   }
 }
