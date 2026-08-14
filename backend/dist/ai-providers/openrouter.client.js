@@ -42,9 +42,12 @@ class OpenRouterClient {
             {
                 role: 'system',
                 content: 'You are a manga page layout analyzer. Given a manga page image, detect every distinct story panel (khung truyện) ' +
-                    'and return their pixel bounding boxes in reading order (top-to-bottom, right-to-left for typical manga). ' +
+                    'and return their bounding boxes in reading order (top-to-bottom, right-to-left for typical manga). ' +
+                    'IMPORTANT: you may perceive this image at a downscaled resolution, so NEVER return absolute pixel coordinates. ' +
+                    "Instead return NORMALIZED fractional coordinates in the range 0.0 to 1.0, relative to the image's own width and height, " +
+                    'where x=0,y=0 is the top-left corner and x=1,y=1 is the bottom-right corner. ' +
                     'Respond ONLY with JSON of the shape {"panels":[{"x":number,"y":number,"width":number,"height":number}]} ' +
-                    'using integer pixel coordinates relative to the original image dimensions.',
+                    'where x,y is the top-left corner of the panel and width,height are its size, all as fractions between 0 and 1.',
             },
             {
                 role: 'user',

@@ -49,7 +49,14 @@ let PanelsService = class PanelsService {
         const publicUrl = this.configService.get('R2_PUBLIC_URL') ?? '';
         const results = [];
         for (let i = 0; i < boxes.length; i += 1) {
-            const bbox = (0, image_cropper_util_1.clampBoundingBox)(boxes[i], imageWidth, imageHeight);
+            const normalized = boxes[i];
+            const pixelBox = {
+                x: normalized.x * imageWidth,
+                y: normalized.y * imageHeight,
+                width: normalized.width * imageWidth,
+                height: normalized.height * imageHeight,
+            };
+            const bbox = (0, image_cropper_util_1.clampBoundingBox)(pixelBox, imageWidth, imageHeight);
             const croppedBuffer = await (0, image_cropper_util_1.cropRegion)(imageBuffer, bbox);
             const key = `projects/${projectId}/pages/${pageId}/panels/${(0, uuid_1.v4)()}.png`;
             await this.r2.send(new client_s3_1.PutObjectCommand({

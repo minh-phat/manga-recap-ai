@@ -43,7 +43,14 @@ export class PanelsService {
     const results: { panel: Panel; buffer: Buffer }[] = [];
 
     for (let i = 0; i < boxes.length; i += 1) {
-      const bbox = clampBoundingBox(boxes[i], imageWidth, imageHeight);
+      const normalized = boxes[i];
+      const pixelBox = {
+        x: normalized.x * imageWidth,
+        y: normalized.y * imageHeight,
+        width: normalized.width * imageWidth,
+        height: normalized.height * imageHeight,
+      };
+      const bbox = clampBoundingBox(pixelBox, imageWidth, imageHeight);
       const croppedBuffer = await cropRegion(imageBuffer, bbox);
 
       const key = `projects/${projectId}/pages/${pageId}/panels/${uuid()}.png`;
