@@ -27,6 +27,7 @@ export interface GenerateNarrationInput {
   panels: NarrationPanelInput[];
   storySoFar: string;
   pageIndex: number;
+  language: string;
 }
 
 export interface TranslateTextsInput {

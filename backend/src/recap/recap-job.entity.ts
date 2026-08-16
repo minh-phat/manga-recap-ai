@@ -6,6 +6,7 @@ export interface RecapJob {
   _id?: ObjectId;
   projectId: ObjectId;
   pageIds: ObjectId[];
+  language: string;
   status: RecapJobStatus;
   currentStep?: string;
   error?: string;

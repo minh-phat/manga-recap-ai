@@ -44,11 +44,13 @@ export class RecapJobsService {
     projectId: string,
     pageIds: string[],
     createdBy: string,
+    language: string,
   ): Promise<RecapJob> {
     const now = new Date();
     const job: Omit<RecapJob, '_id'> = {
       projectId: new ObjectId(projectId),
       pageIds: pageIds.map((id) => new ObjectId(id)),
+      language,
       status: 'queued',
       createdBy: new ObjectId(createdBy),
       createdAt: now,
@@ -142,6 +144,7 @@ export class RecapJobsService {
           })),
           storySoFar,
           pageIndex: page.pageIndex,
+          language: job.language,
         });
 
         for (let i = 0; i < cropped.length; i += 1) {

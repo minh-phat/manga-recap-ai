@@ -5,6 +5,6 @@ export declare class OpenRouterClient implements AiProviderStrategy {
     constructor(apiKey: string, modelId: string);
     private chat;
     detectPanels({ imageBuffer, mimeType, }: DetectPanelsInput): Promise<PanelBox[]>;
-    generateNarration({ panels, storySoFar, pageIndex, }: GenerateNarrationInput): Promise<string[]>;
+    generateNarration({ panels, storySoFar, pageIndex, language, }: GenerateNarrationInput): Promise<string[]>;
     translateTexts({ texts, targetLanguage, }: TranslateTextsInput): Promise<string[]>;
 }

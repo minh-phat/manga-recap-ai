@@ -15,7 +15,7 @@ export declare class RecapJobsService {
     constructor(db: Db, pagesService: PagesService, panelsService: PanelsService, aiProviderFactory: AiProviderFactory, recapScriptsService: RecapScriptsService);
     findAllByProject(projectId: string): Promise<RecapJob[]>;
     findOne(id: string): Promise<RecapJob>;
-    createJob(projectId: string, pageIds: string[], createdBy: string): Promise<RecapJob>;
+    createJob(projectId: string, pageIds: string[], createdBy: string, language: string): Promise<RecapJob>;
     private updateJob;
     private runJob;
 }

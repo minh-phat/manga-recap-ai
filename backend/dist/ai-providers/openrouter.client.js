@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenRouterClient = void 0;
 const common_1 = require("@nestjs/common");
+const tts_languages_1 = require("../recap/tts-languages");
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 function toDataUrl(buffer, mimeType) {
     return `data:${mimeType};base64,${buffer.toString('base64')}`;
@@ -70,7 +71,8 @@ class OpenRouterClient {
         }
         return parsed.panels;
     }
-    async generateNarration({ panels, storySoFar, pageIndex, }) {
+    async generateNarration({ panels, storySoFar, pageIndex, language, }) {
+        const languageLabel = (0, tts_languages_1.resolveLanguageLabel)(language);
         const content = [
             {
                 type: 'text',
@@ -78,6 +80,7 @@ class OpenRouterClient {
                     `Here is the story so far:\n\n${storySoFar || '(this is the beginning of the story)'}\n\n` +
                     `Below are ${panels.length} manga panel images from page ${pageIndex}, in reading order. ` +
                     `Write one short narration line per panel that continues naturally from the story so far and flows into the next panel. ` +
+                    `Write all narration lines in ${languageLabel} (language code: ${language}). ` +
                     `Respond ONLY with JSON of the shape {"narrations":["line for panel 1", "line for panel 2", ...]} ` +
                     `with exactly ${panels.length} entries, in the same order as the panels below.`,
             },

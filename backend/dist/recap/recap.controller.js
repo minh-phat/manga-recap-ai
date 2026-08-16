@@ -34,7 +34,7 @@ let RecapController = class RecapController {
     }
     async create(projectId, dto, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
-        return this.recapJobsService.createJob(projectId, dto.pageIds, req.user.userId);
+        return this.recapJobsService.createJob(projectId, dto.pageIds, req.user.userId, dto.language ?? 'vi-VN');
     }
     async findAll(projectId, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);

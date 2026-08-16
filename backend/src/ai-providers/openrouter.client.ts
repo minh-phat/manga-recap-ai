@@ -6,6 +6,7 @@ import {
   PanelBox,
   TranslateTextsInput,
 } from './ai-provider.interface';
+import { resolveLanguageLabel } from '../recap/tts-languages';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -97,7 +98,9 @@ export class OpenRouterClient implements AiProviderStrategy {
     panels,
     storySoFar,
     pageIndex,
+    language,
   }: GenerateNarrationInput): Promise<string[]> {
+    const languageLabel = resolveLanguageLabel(language);
     const content: unknown[] = [
       {
         type: 'text',
@@ -106,6 +109,7 @@ export class OpenRouterClient implements AiProviderStrategy {
           `Here is the story so far:\n\n${storySoFar || '(this is the beginning of the story)'}\n\n` +
           `Below are ${panels.length} manga panel images from page ${pageIndex}, in reading order. ` +
           `Write one short narration line per panel that continues naturally from the story so far and flows into the next panel. ` +
+          `Write all narration lines in ${languageLabel} (language code: ${language}). ` +
           `Respond ONLY with JSON of the shape {"narrations":["line for panel 1", "line for panel 2", ...]} ` +
           `with exactly ${panels.length} entries, in the same order as the panels below.`,
       },

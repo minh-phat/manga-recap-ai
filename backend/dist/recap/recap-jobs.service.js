@@ -51,11 +51,12 @@ let RecapJobsService = RecapJobsService_1 = class RecapJobsService {
         }
         return job;
     }
-    async createJob(projectId, pageIds, createdBy) {
+    async createJob(projectId, pageIds, createdBy, language) {
         const now = new Date();
         const job = {
             projectId: new mongodb_1.ObjectId(projectId),
             pageIds: pageIds.map((id) => new mongodb_1.ObjectId(id)),
+            language,
             status: 'queued',
             createdBy: new mongodb_1.ObjectId(createdBy),
             createdAt: now,
@@ -116,6 +117,7 @@ let RecapJobsService = RecapJobsService_1 = class RecapJobsService {
                     })),
                     storySoFar,
                     pageIndex: page.pageIndex,
+                    language: job.language,
                 });
                 for (let i = 0; i < cropped.length; i += 1) {
                     const narrationText = narrations[i] ?? '';

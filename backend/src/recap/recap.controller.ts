@@ -40,6 +40,7 @@ export class RecapController {
       projectId,
       dto.pageIds,
       req.user.userId,
+      dto.language ?? 'vi-VN',
     );
   }
 

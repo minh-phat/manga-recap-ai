@@ -11,8 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateRecapJobDto = void 0;
 const class_validator_1 = require("class-validator");
+const tts_languages_1 = require("../tts-languages");
 class CreateRecapJobDto {
     pageIds;
+    language;
 }
 exports.CreateRecapJobDto = CreateRecapJobDto;
 __decorate([
@@ -21,4 +23,9 @@ __decorate([
     (0, class_validator_1.IsString)({ each: true }),
     __metadata("design:type", Array)
 ], CreateRecapJobDto.prototype, "pageIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(tts_languages_1.SUPPORTED_LANGUAGE_CODES),
+    __metadata("design:type", String)
+], CreateRecapJobDto.prototype, "language", void 0);
 //# sourceMappingURL=create-recap-job.dto.js.map

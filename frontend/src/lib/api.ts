@@ -104,6 +104,7 @@ export interface RecapJob {
   _id: string;
   projectId: string;
   pageIds: string[];
+  language: string;
   status: RecapJobStatus;
   currentStep?: string;
   error?: string;
@@ -183,10 +184,10 @@ export const api = {
     return uploadRequest<Page>(`/projects/${projectId}/pages`, formData);
   },
 
-  createRecapJob: (projectId: string, pageIds: string[]) =>
+  createRecapJob: (projectId: string, pageIds: string[], language: string) =>
     request<RecapJob>(`/projects/${projectId}/recap-jobs`, {
       method: 'POST',
-      body: JSON.stringify({ pageIds }),
+      body: JSON.stringify({ pageIds, language }),
     }),
 
   getRecapJob: (projectId: string, jobId: string) =>

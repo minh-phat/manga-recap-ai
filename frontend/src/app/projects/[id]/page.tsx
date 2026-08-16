@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, ApiError, Page, PageStatus, Project } from '@/lib/api';
+import { api, ApiError, Page, PageStatus, Project, RECAP_LANGUAGES } from '@/lib/api';
 import { getToken, isAdmin } from '@/lib/auth';
 
 const STATUS_LABEL: Record<PageStatus, string> = {
@@ -33,6 +33,7 @@ export default function ProjectDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [language, setLanguage] = useState('vi-VN');
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
@@ -95,7 +96,7 @@ export default function ProjectDetailPage() {
       const orderedIds = pages
         .filter((page) => selectedIds.includes(page._id))
         .map((page) => page._id);
-      const job = await api.createRecapJob(projectId, orderedIds);
+      const job = await api.createRecapJob(projectId, orderedIds, language);
       router.push(`/projects/${projectId}/recap/${job._id}`);
     } catch (err) {
       setGenerateError(err instanceof ApiError ? err.message : 'Không thể tạo recap');
@@ -157,6 +158,18 @@ export default function ProjectDetailPage() {
                   <span className="text-sm text-gray-700">
                     Đã chọn {selectedIds.length} trang
                   </span>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    disabled={generating}
+                    className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 disabled:opacity-50"
+                  >
+                    {RECAP_LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     onClick={handleGenerateRecap}
