@@ -17,6 +17,7 @@ export declare class RecapVideoJobsService {
     private bundleServeUrlPromise;
     constructor(db: Db, r2: S3Client, configService: ConfigService, recapScriptsService: RecapScriptsService, aiProviderFactory: AiProviderFactory, edgeTtsClient: EdgeTtsClient);
     findOne(id: string): Promise<RecapVideoJob>;
+    findAllByScript(scriptId: string): Promise<RecapVideoJob[]>;
     createJob(projectId: string, scriptId: string, includeCaptions: boolean, language: string, createdBy: string): Promise<RecapVideoJob>;
     private updateJob;
     private getBundleServeUrl;

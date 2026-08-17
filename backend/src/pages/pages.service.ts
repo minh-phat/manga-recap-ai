@@ -1,6 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { Collection, Db, ObjectId } from 'mongodb';
 import { imageSize } from 'image-size';
 import { v4 as uuid } from 'uuid';
@@ -10,6 +14,7 @@ import { Page } from './page.entity';
 
 @Injectable()
 export class PagesService {
+  private readonly logger = new Logger(PagesService.name);
   private readonly collection: Collection<Page>;
 
   constructor(
@@ -75,5 +80,35 @@ export class PagesService {
 
     const result = await this.collection.insertOne(page);
     return { ...page, _id: result.insertedId };
+  }
+
+  async remove(projectId: string, pageId: string): Promise<void> {
+    const page = await this.collection.findOne({
+      _id: new ObjectId(pageId),
+      projectId: new ObjectId(projectId),
+    });
+    if (!page) {
+      throw new NotFoundException('Page not found');
+    }
+
+    const publicUrl = (
+      this.configService.get<string>('R2_PUBLIC_URL') ?? ''
+    ).replace(/\/$/, '');
+    if (publicUrl && page.imageUrl.startsWith(`${publicUrl}/`)) {
+      const key = page.imageUrl.slice(publicUrl.length + 1);
+      try {
+        await this.r2.send(
+          new DeleteObjectCommand({
+            Bucket: this.configService.get<string>('R2_BUCKET_NAME'),
+            Key: key,
+          }),
+        );
+      } catch (error) {
+        this.logger.error(`Failed to delete R2 object ${key}`, error);
+      }
+    }
+
+    await this.db.collection('panels').deleteMany({ pageId: page._id });
+    await this.collection.deleteOne({ _id: page._id });
   }
 }

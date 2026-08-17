@@ -45,6 +45,13 @@ export class RecapVideoJobsService {
     return job;
   }
 
+  findAllByScript(scriptId: string): Promise<RecapVideoJob[]> {
+    return this.collection
+      .find({ scriptId: new ObjectId(scriptId) })
+      .sort({ createdAt: -1 })
+      .toArray();
+  }
+
   async createJob(
     projectId: string,
     scriptId: string,

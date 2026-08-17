@@ -52,6 +52,10 @@ let RecapController = class RecapController {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
         return this.recapVideoJobsService.createJob(projectId, scriptId, dto.includeCaptions, dto.language, req.user.userId);
     }
+    async findVideoJobs(projectId, scriptId, req) {
+        await this.projectsService.findOneByOwner(projectId, req.user.userId);
+        return this.recapVideoJobsService.findAllByScript(scriptId);
+    }
     async findVideoJob(projectId, videoJobId, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
         return this.recapVideoJobsService.findOne(videoJobId);
@@ -103,6 +107,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, create_recap_video_job_dto_1.CreateRecapVideoJobDto, Object]),
     __metadata("design:returntype", Promise)
 ], RecapController.prototype, "createVideoJob", null);
+__decorate([
+    (0, common_1.Get)('recap-scripts/:scriptId/video-jobs'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.Param)('scriptId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], RecapController.prototype, "findVideoJobs", null);
 __decorate([
     (0, common_1.Get)('video-jobs/:videoJobId'),
     __param(0, (0, common_1.Param)('projectId')),

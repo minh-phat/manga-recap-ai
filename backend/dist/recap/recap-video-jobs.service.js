@@ -89,6 +89,12 @@ let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsServic
         }
         return job;
     }
+    findAllByScript(scriptId) {
+        return this.collection
+            .find({ scriptId: new mongodb_1.ObjectId(scriptId) })
+            .sort({ createdAt: -1 })
+            .toArray();
+    }
     async createJob(projectId, scriptId, includeCaptions, language, createdBy) {
         const now = new Date();
         const job = {

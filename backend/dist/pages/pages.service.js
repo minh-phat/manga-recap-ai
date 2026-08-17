@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var PagesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PagesService = void 0;
 const common_1 = require("@nestjs/common");
@@ -21,10 +22,11 @@ const image_size_1 = require("image-size");
 const uuid_1 = require("uuid");
 const database_providers_1 = require("../database/database.providers");
 const r2_providers_1 = require("../storage/r2.providers");
-let PagesService = class PagesService {
+let PagesService = PagesService_1 = class PagesService {
     db;
     r2;
     configService;
+    logger = new common_1.Logger(PagesService_1.name);
     collection;
     constructor(db, r2, configService) {
         this.db = db;
@@ -78,9 +80,33 @@ let PagesService = class PagesService {
         const result = await this.collection.insertOne(page);
         return { ...page, _id: result.insertedId };
     }
+    async remove(projectId, pageId) {
+        const page = await this.collection.findOne({
+            _id: new mongodb_1.ObjectId(pageId),
+            projectId: new mongodb_1.ObjectId(projectId),
+        });
+        if (!page) {
+            throw new common_1.NotFoundException('Page not found');
+        }
+        const publicUrl = (this.configService.get('R2_PUBLIC_URL') ?? '').replace(/\/$/, '');
+        if (publicUrl && page.imageUrl.startsWith(`${publicUrl}/`)) {
+            const key = page.imageUrl.slice(publicUrl.length + 1);
+            try {
+                await this.r2.send(new client_s3_1.DeleteObjectCommand({
+                    Bucket: this.configService.get('R2_BUCKET_NAME'),
+                    Key: key,
+                }));
+            }
+            catch (error) {
+                this.logger.error(`Failed to delete R2 object ${key}`, error);
+            }
+        }
+        await this.db.collection('panels').deleteMany({ pageId: page._id });
+        await this.collection.deleteOne({ _id: page._id });
+    }
 };
 exports.PagesService = PagesService;
-exports.PagesService = PagesService = __decorate([
+exports.PagesService = PagesService = PagesService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_providers_1.MONGO_DB)),
     __param(1, (0, common_1.Inject)(r2_providers_1.R2_CLIENT)),

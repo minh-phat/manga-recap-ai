@@ -12,5 +12,6 @@ export declare class PagesController {
     constructor(pagesService: PagesService, projectsService: ProjectsService);
     findAll(projectId: string, req: AuthedRequest): Promise<import("./page.entity").Page[]>;
     create(projectId: string, req: AuthedRequest, file: Express.Multer.File): Promise<import("./page.entity").Page>;
+    remove(projectId: string, pageId: string, req: AuthedRequest): Promise<void>;
 }
 export {};

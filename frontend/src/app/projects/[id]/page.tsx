@@ -108,6 +108,18 @@ export default function ProjectDetailPage() {
     }
   }
 
+  async function handleDeletePage(pageId: string) {
+    if (!project) return;
+    if (!window.confirm('Xoá trang này? Hành động không thể hoàn tác.')) return;
+    try {
+      await api.deletePage(project._id, pageId);
+      setPages((prev) => prev.filter((p) => p._id !== pageId));
+      setSelectedIds((prev) => prev.filter((id) => id !== pageId));
+    } catch (err) {
+      setUploadError(err instanceof ApiError ? err.message : 'Không thể xoá trang');
+    }
+  }
+
   function toggleSelect(pageId: string) {
     setSelectedIds((prev) =>
       prev.includes(pageId) ? prev.filter((id) => id !== pageId) : [...prev, pageId],
@@ -263,6 +275,16 @@ export default function ProjectDetailPage() {
                         onChange={() => toggleSelect(page._id)}
                         className="absolute top-2 left-2 h-5 w-5"
                       />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDeletePage(page._id);
+                        }}
+                        className="absolute top-2 right-2 rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
+                      >
+                        Xoá
+                      </button>
                     </div>
                     <div className="p-3">
                       <div className="flex items-center justify-between">

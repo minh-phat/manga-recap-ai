@@ -90,6 +90,16 @@ export class RecapController {
     );
   }
 
+  @Get('recap-scripts/:scriptId/video-jobs')
+  async findVideoJobs(
+    @Param('projectId') projectId: string,
+    @Param('scriptId') scriptId: string,
+    @Req() req: AuthedRequest,
+  ) {
+    await this.projectsService.findOneByOwner(projectId, req.user.userId);
+    return this.recapVideoJobsService.findAllByScript(scriptId);
+  }
+
   @Get('video-jobs/:videoJobId')
   async findVideoJob(
     @Param('projectId') projectId: string,

@@ -19,10 +19,20 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
   const [includeCaptions, setIncludeCaptions] = useState(true);
   const [language, setLanguage] = useState('vi-VN');
   const [videoJob, setVideoJob] = useState<RecapVideoJob | null>(null);
+  const [videos, setVideos] = useState<RecapVideoJob[]>([]);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isBusy = videoJob?.status === 'queued' || videoJob?.status === 'running';
+
+  const loadVideos = useCallback(async () => {
+    try {
+      const data = await api.listRecapVideoJobs(projectId, scriptId);
+      setVideos(data);
+    } catch {
+      // ignore — history list is a non-critical enhancement
+    }
+  }, [projectId, scriptId]);
 
   const pollVideoJob = useCallback(
     async (videoJobId: string) => {
@@ -31,14 +41,19 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
         setVideoJob(data);
         if (data.status === 'completed' || data.status === 'failed') {
           if (pollRef.current) clearInterval(pollRef.current);
+          void loadVideos();
         }
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'Không thể tải trạng thái video');
         if (pollRef.current) clearInterval(pollRef.current);
       }
     },
-    [projectId],
+    [projectId, loadVideos],
   );
+
+  useEffect(() => {
+    void loadVideos();
+  }, [loadVideos]);
 
   useEffect(() => {
     return () => {
@@ -51,6 +66,7 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
     try {
       const created = await api.createRecapVideoJob(projectId, scriptId, includeCaptions, language);
       setVideoJob(created);
+      void loadVideos();
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(() => void pollVideoJob(created._id), 2000);
     } catch (err) {
@@ -123,6 +139,51 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
           )}
         </div>
       )}
+
+      <div className="mt-6 border-t border-gray-100 pt-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-900">
+          Video đã tạo ({videos.length})
+        </h3>
+        {videos.length === 0 ? (
+          <p className="text-sm text-gray-500">Chưa có video nào được tạo.</p>
+        ) : (
+          <div className="space-y-3">
+            {videos.map((video) => (
+              <div key={video._id} className="rounded-lg border border-gray-100 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">
+                    {new Date(video.createdAt).toLocaleString()}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      video.status === 'completed'
+                        ? 'bg-green-100 text-green-700'
+                        : video.status === 'failed'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    {VIDEO_STATUS_LABEL[video.status]}
+                  </span>
+                </div>
+                {video.error && <p className="mt-1 text-xs text-red-600">{video.error}</p>}
+                {video.status === 'completed' && video.videoUrl && (
+                  <div className="mt-2 space-y-2">
+                    <video controls src={video.videoUrl} className="w-full rounded-lg" />
+                    <a
+                      href={video.videoUrl}
+                      download
+                      className="inline-block text-sm text-blue-600 hover:underline"
+                    >
+                      Tải video
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

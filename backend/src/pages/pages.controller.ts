@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Param,
   ParseFilePipeBuilder,
@@ -53,5 +54,15 @@ export class PagesController {
   ) {
     await this.projectsService.findOneByOwner(projectId, req.user.userId);
     return this.pagesService.create(projectId, file);
+  }
+
+  @Delete(':pageId')
+  async remove(
+    @Param('projectId') projectId: string,
+    @Param('pageId') pageId: string,
+    @Req() req: AuthedRequest,
+  ) {
+    await this.projectsService.findOneByOwner(projectId, req.user.userId);
+    await this.pagesService.remove(projectId, pageId);
   }
 }

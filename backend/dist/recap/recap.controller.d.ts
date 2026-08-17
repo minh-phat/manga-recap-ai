@@ -21,6 +21,7 @@ export declare class RecapController {
     findOne(projectId: string, jobId: string, req: AuthedRequest): Promise<import("./recap-job.entity").RecapJob>;
     findScript(projectId: string, scriptId: string, req: AuthedRequest): Promise<import("./recap-script.entity").RecapScript>;
     createVideoJob(projectId: string, scriptId: string, dto: CreateRecapVideoJobDto, req: AuthedRequest): Promise<import("./recap-video-job.entity").RecapVideoJob>;
+    findVideoJobs(projectId: string, scriptId: string, req: AuthedRequest): Promise<import("./recap-video-job.entity").RecapVideoJob[]>;
     findVideoJob(projectId: string, videoJobId: string, req: AuthedRequest): Promise<import("./recap-video-job.entity").RecapVideoJob>;
 }
 export {};

@@ -35,6 +35,10 @@ let PagesController = class PagesController {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
         return this.pagesService.create(projectId, file);
     }
+    async remove(projectId, pageId, req) {
+        await this.projectsService.findOneByOwner(projectId, req.user.userId);
+        await this.pagesService.remove(projectId, pageId);
+    }
 };
 exports.PagesController = PagesController;
 __decorate([
@@ -58,6 +62,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], PagesController.prototype, "create", null);
+__decorate([
+    (0, common_1.Delete)(':pageId'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.Param)('pageId')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], PagesController.prototype, "remove", null);
 exports.PagesController = PagesController = __decorate([
     (0, common_1.Controller)('projects/:projectId/pages'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
