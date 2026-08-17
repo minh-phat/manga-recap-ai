@@ -221,6 +221,9 @@ export const api = {
   getRecapJob: (projectId: string, jobId: string) =>
     request<RecapJob>(`/projects/${projectId}/recap-jobs/${jobId}`),
 
+  listRecapJobs: (projectId: string) =>
+    request<RecapJob[]>(`/projects/${projectId}/recap-jobs`),
+
   getRecapScript: (projectId: string, scriptId: string) =>
     request<RecapScript>(`/projects/${projectId}/recap-scripts/${scriptId}`),
 

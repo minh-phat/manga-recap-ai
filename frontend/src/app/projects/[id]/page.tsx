@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, ApiError, Page, PageStatus, Project, RECAP_LANGUAGES } from '@/lib/api';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { api, ApiError, Page, PageStatus, Project, RecapJob, RECAP_LANGUAGES } from '@/lib/api';
 import { getToken, isAdmin } from '@/lib/auth';
 
 const STATUS_LABEL: Record<PageStatus, string> = {
@@ -20,6 +29,20 @@ const STATUS_CLASS: Record<PageStatus, string> = {
   failed: 'bg-red-100 text-red-700',
 };
 
+const RECAP_STATUS_LABEL: Record<RecapJob['status'], string> = {
+  queued: 'Đang chờ',
+  running: 'Đang xử lý',
+  completed: 'Hoàn tất',
+  failed: 'Lỗi',
+};
+
+const RECAP_STATUS_COLOR: Record<RecapJob['status'], 'default' | 'info' | 'success' | 'error'> = {
+  queued: 'default',
+  running: 'info',
+  completed: 'success',
+  failed: 'error',
+};
+
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -28,6 +51,7 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
+  const [recapJobs, setRecapJobs] = useState<RecapJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -41,12 +65,14 @@ export default function ProjectDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [projectData, pagesData] = await Promise.all([
+      const [projectData, pagesData, recapJobsData] = await Promise.all([
         api.getProject(projectId),
         api.getProjectPages(projectId),
+        api.listRecapJobs(projectId),
       ]);
       setProject(projectData);
       setPages(pagesData);
+      setRecapJobs(recapJobsData);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -97,6 +123,7 @@ export default function ProjectDetailPage() {
         .filter((page) => selectedIds.includes(page._id))
         .map((page) => page._id);
       const job = await api.createRecapJob(projectId, orderedIds, language);
+      setRecapJobs((prev) => [job, ...prev]);
       router.push(`/projects/${projectId}/recap/${job._id}`);
     } catch (err) {
       setGenerateError(err instanceof ApiError ? err.message : 'Không thể tạo recap');
@@ -131,6 +158,44 @@ export default function ProjectDetailPage() {
                 Tạo lúc {new Date(project.createdAt).toLocaleString()}
               </p>
             </div>
+
+            <Accordion sx={{ mb: 3 }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography sx={{ fontWeight: 500 }}>
+                  Recap đã tạo ({recapJobs.length})
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 0 }}>
+                {recapJobs.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1.5 }}>
+                    Chưa có recap nào được tạo.
+                  </Typography>
+                ) : (
+                  <List disablePadding>
+                    {recapJobs.map((job) => (
+                      <ListItemButton
+                        key={job._id}
+                        component={Link}
+                        href={`/projects/${projectId}/recap/${job._id}`}
+                      >
+                        <ListItemText
+                          primary={
+                            RECAP_LANGUAGES.find((lang) => lang.code === job.language)?.label ??
+                            job.language
+                          }
+                          secondary={new Date(job.createdAt).toLocaleString()}
+                        />
+                        <Chip
+                          label={RECAP_STATUS_LABEL[job.status]}
+                          color={RECAP_STATUS_COLOR[job.status]}
+                          size="small"
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
+              </AccordionDetails>
+            </Accordion>
 
             <div className="mb-8 rounded-lg bg-white p-4 shadow">
               <label className="mb-2 block text-sm font-medium text-gray-900">
