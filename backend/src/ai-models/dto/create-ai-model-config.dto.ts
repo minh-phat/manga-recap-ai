@@ -1,7 +1,7 @@
 import { IsIn, IsString, MinLength } from 'class-validator';
 import type { AiProvider, AiTaskType } from '../ai-model-config.entity';
 
-const PROVIDERS: AiProvider[] = ['openrouter', 'gemini', 'anthropic'];
+const PROVIDERS: AiProvider[] = ['openrouter', 'gemini', 'anthropic', 'local'];
 const TASK_TYPES: AiTaskType[] = ['panel_detection', 'narration'];
 
 export class CreateAiModelConfigDto {

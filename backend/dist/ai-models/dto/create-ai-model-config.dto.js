@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateAiModelConfigDto = void 0;
 const class_validator_1 = require("class-validator");
-const PROVIDERS = ['openrouter', 'gemini', 'anthropic'];
+const PROVIDERS = ['openrouter', 'gemini', 'anthropic', 'local'];
 const TASK_TYPES = ['panel_detection', 'narration'];
 class CreateAiModelConfigDto {
     label;

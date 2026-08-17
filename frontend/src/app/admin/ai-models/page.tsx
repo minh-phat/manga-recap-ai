@@ -9,7 +9,7 @@ const TASK_LABEL: Record<AiTaskType, string> = {
   panel_detection: 'Tách panel (vision)',
   narration: 'Sinh nội dung recap',
 };
-const PROVIDERS: AiProvider[] = ['openrouter', 'gemini', 'anthropic'];
+const PROVIDERS: AiProvider[] = ['openrouter', 'gemini', 'anthropic', 'local'];
 
 export default function AdminAiModelsPage() {
   const [configs, setConfigs] = useState<AiModelConfig[]>([]);
@@ -101,7 +101,11 @@ export default function AdminAiModelsPage() {
             <input
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              placeholder="Model id (vd: google/gemini-2.5-flash)"
+              placeholder={
+                provider === 'local'
+                  ? 'Model id trong Ollama (vd: qwen2.5vl:7b)'
+                  : 'Model id (vd: google/gemini-2.5-flash)'
+              }
               required
               className="col-span-2 rounded-md border border-gray-300 px-3 py-2 text-sm"
             />
@@ -119,7 +123,7 @@ export default function AdminAiModelsPage() {
             <input
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="API key"
+              placeholder={provider === 'local' ? 'Không cần key, nhập tùy ý (vd: local)' : 'API key'}
               type="password"
               required
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"

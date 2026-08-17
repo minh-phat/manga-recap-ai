@@ -83,7 +83,7 @@ export interface Page {
   createdAt: string;
 }
 
-export type AiProvider = 'openrouter' | 'gemini' | 'anthropic';
+export type AiProvider = 'openrouter' | 'gemini' | 'anthropic' | 'local';
 export type AiTaskType = 'panel_detection' | 'narration';
 
 export interface AiModelConfig {
