@@ -114,12 +114,37 @@ export interface RecapJob {
   completedAt?: string;
 }
 
+export interface PanelBoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type PanelStatus = 'ok' | 'failed';
+
+export interface PanelAttempt {
+  bbox: PanelBoundingBox;
+  croppedImageUrl: string;
+}
+
+export interface PanelRecord {
+  _id: string;
+  pageId: string;
+  order: number;
+  bbox: PanelBoundingBox;
+  croppedImageUrl: string;
+  status: PanelStatus;
+  attempts: PanelAttempt[];
+}
+
 export interface RecapScriptEntry {
   panelId: string;
   pageId: string;
   order: number;
   croppedImageUrl: string;
   narrationText: string;
+  bbox: PanelBoundingBox;
 }
 
 export interface RecapScript {
@@ -177,6 +202,9 @@ export const api = {
   getProject: (id: string) => request<Project>(`/projects/${id}`),
 
   getProjectPages: (projectId: string) => request<Page[]>(`/projects/${projectId}/pages`),
+
+  getPagePanels: (projectId: string, pageId: string) =>
+    request<PanelRecord[]>(`/projects/${projectId}/pages/${pageId}/panels`),
 
   uploadPage: (projectId: string, file: File) => {
     const formData = new FormData();

@@ -106,7 +106,7 @@ let RecapJobsService = RecapJobsService_1 = class RecapJobsService {
                 if (boxes.length === 0) {
                     continue;
                 }
-                const cropped = await this.panelsService.createFromDetections(job.projectId.toString(), pageId.toString(), imageBuffer, boxes);
+                const cropped = await this.panelsService.createFromDetections(job.projectId.toString(), pageId.toString(), imageBuffer, boxes, IMAGE_MIME_TYPE, panelDetectionClient);
                 await this.updateJob(jobObjectId, {
                     currentStep: `Đang sinh nội dung trang ${pageNumber + 1}/${job.pageIds.length}`,
                 });
@@ -127,6 +127,7 @@ let RecapJobsService = RecapJobsService_1 = class RecapJobsService {
                         order: globalOrder,
                         croppedImageUrl: cropped[i].panel.croppedImageUrl,
                         narrationText,
+                        bbox: cropped[i].panel.bbox,
                     });
                     globalOrder += 1;
                 }

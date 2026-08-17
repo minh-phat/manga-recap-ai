@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { PanelBoundingBox } from '../panels/panel.entity';
 
 export interface RecapScriptEntry {
   panelId: ObjectId;
@@ -6,6 +7,7 @@ export interface RecapScriptEntry {
   order: number;
   croppedImageUrl: string;
   narrationText: string;
+  bbox: PanelBoundingBox;
 }
 
 export interface RecapScript {

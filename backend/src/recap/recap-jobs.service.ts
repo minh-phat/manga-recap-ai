@@ -131,6 +131,8 @@ export class RecapJobsService {
           pageId.toString(),
           imageBuffer,
           boxes,
+          IMAGE_MIME_TYPE,
+          panelDetectionClient,
         );
 
         await this.updateJob(jobObjectId, {
@@ -155,6 +157,7 @@ export class RecapJobsService {
             order: globalOrder,
             croppedImageUrl: cropped[i].panel.croppedImageUrl,
             narrationText,
+            bbox: cropped[i].panel.bbox,
           });
           globalOrder += 1;
         }

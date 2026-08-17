@@ -7,6 +7,13 @@ export interface PanelBoundingBox {
   height: number;
 }
 
+export type PanelStatus = 'ok' | 'failed';
+
+export interface PanelAttempt {
+  bbox: PanelBoundingBox;
+  croppedImageUrl: string;
+}
+
 export interface Panel {
   _id?: ObjectId;
   projectId: ObjectId;
@@ -14,5 +21,7 @@ export interface Panel {
   order: number;
   bbox: PanelBoundingBox;
   croppedImageUrl: string;
+  status: PanelStatus;
+  attempts: PanelAttempt[];
   createdAt: Date;
 }

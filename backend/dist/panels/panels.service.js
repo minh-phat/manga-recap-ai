@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var PanelsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PanelsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -25,10 +26,12 @@ const uuid_1 = require("uuid");
 const database_providers_1 = require("../database/database.providers");
 const r2_providers_1 = require("../storage/r2.providers");
 const image_cropper_util_1 = require("./image-cropper.util");
-let PanelsService = class PanelsService {
+const MAX_ATTEMPTS = 3;
+let PanelsService = PanelsService_1 = class PanelsService {
     db;
     r2;
     configService;
+    logger = new common_1.Logger(PanelsService_1.name);
     collection;
     constructor(db, r2, configService) {
         this.db = db;
@@ -42,48 +45,82 @@ let PanelsService = class PanelsService {
             .sort({ order: 1 })
             .toArray();
     }
-    async createFromDetections(projectId, pageId, imageBuffer, boxes) {
+    async uploadCrop(projectId, pageId, buffer) {
+        const publicUrl = this.configService.get('R2_PUBLIC_URL') ?? '';
+        const key = `projects/${projectId}/pages/${pageId}/panels/${(0, uuid_1.v4)()}.png`;
+        await this.r2.send(new client_s3_1.PutObjectCommand({
+            Bucket: this.configService.get('R2_BUCKET_NAME'),
+            Key: key,
+            Body: buffer,
+            ContentType: 'image/png',
+        }));
+        return `${publicUrl.replace(/\/$/, '')}/${key}`;
+    }
+    async createFromDetections(projectId, pageId, imageBuffer, boxes, mimeType, panelDetectionClient) {
         const metadata = await (0, sharp_1.default)(imageBuffer).metadata();
         const imageWidth = metadata.width ?? 0;
         const imageHeight = metadata.height ?? 0;
-        const publicUrl = this.configService.get('R2_PUBLIC_URL') ?? '';
         const results = [];
         for (let i = 0; i < boxes.length; i += 1) {
-            const normalized = boxes[i];
-            const pixelBox = {
-                x: normalized.x * imageWidth,
-                y: normalized.y * imageHeight,
-                width: normalized.width * imageWidth,
-                height: normalized.height * imageHeight,
-            };
-            const bbox = (0, image_cropper_util_1.clampBoundingBox)(pixelBox, imageWidth, imageHeight);
-            const croppedBuffer = await (0, image_cropper_util_1.cropRegion)(imageBuffer, bbox);
-            const key = `projects/${projectId}/pages/${pageId}/panels/${(0, uuid_1.v4)()}.png`;
-            await this.r2.send(new client_s3_1.PutObjectCommand({
-                Bucket: this.configService.get('R2_BUCKET_NAME'),
-                Key: key,
-                Body: croppedBuffer,
-                ContentType: 'image/png',
-            }));
+            let candidate = boxes[i];
+            const attempts = [];
+            let finalBuffer = null;
+            let status = 'failed';
+            for (let attemptNum = 1; attemptNum <= MAX_ATTEMPTS; attemptNum += 1) {
+                const pixelBox = {
+                    x: candidate.x * imageWidth,
+                    y: candidate.y * imageHeight,
+                    width: candidate.width * imageWidth,
+                    height: candidate.height * imageHeight,
+                };
+                const bbox = (0, image_cropper_util_1.clampBoundingBox)(pixelBox, imageWidth, imageHeight);
+                const croppedBuffer = await (0, image_cropper_util_1.cropRegion)(imageBuffer, bbox);
+                const croppedImageUrl = await this.uploadCrop(projectId, pageId, croppedBuffer);
+                attempts.push({ bbox, croppedImageUrl });
+                finalBuffer = croppedBuffer;
+                const valid = !(0, image_cropper_util_1.isDegenerateNormalizedBox)(candidate) && !(0, image_cropper_util_1.isDegenerateBox)(bbox);
+                if (valid) {
+                    status = 'ok';
+                    break;
+                }
+                if (attemptNum < MAX_ATTEMPTS) {
+                    this.logger.warn(`Panel detection degenerate box (page=${pageId} order=${i + 1} attempt=${attemptNum}): ${JSON.stringify(candidate)} -> retrying`);
+                    candidate = await panelDetectionClient.redetectPanelBox({
+                        imageBuffer,
+                        mimeType,
+                        previousBox: candidate,
+                        order: i + 1,
+                        totalPanels: boxes.length,
+                    });
+                }
+                else {
+                    this.logger.warn(`Panel detection still degenerate after ${MAX_ATTEMPTS} attempts (page=${pageId} order=${i + 1}) — flagging for manual review`);
+                }
+            }
+            const lastAttempt = attempts[attempts.length - 1];
             const panel = {
                 projectId: new mongodb_1.ObjectId(projectId),
                 pageId: new mongodb_1.ObjectId(pageId),
                 order: i + 1,
-                bbox,
-                croppedImageUrl: `${publicUrl.replace(/\/$/, '')}/${key}`,
+                bbox: lastAttempt.bbox,
+                croppedImageUrl: lastAttempt.croppedImageUrl,
+                status,
+                attempts,
                 createdAt: new Date(),
             };
             const result = await this.collection.insertOne(panel);
-            results.push({
-                panel: { ...panel, _id: result.insertedId },
-                buffer: croppedBuffer,
-            });
+            if (status === 'ok') {
+                results.push({
+                    panel: { ...panel, _id: result.insertedId },
+                    buffer: finalBuffer,
+                });
+            }
         }
         return results;
     }
 };
 exports.PanelsService = PanelsService;
-exports.PanelsService = PanelsService = __decorate([
+exports.PanelsService = PanelsService = PanelsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_providers_1.MONGO_DB)),
     __param(1, (0, common_1.Inject)(r2_providers_1.R2_CLIENT)),

@@ -18,6 +18,14 @@ export interface DetectPanelsInput {
   mimeType: string;
 }
 
+export interface RedetectPanelBoxInput {
+  imageBuffer: Buffer;
+  mimeType: string;
+  previousBox: PanelBox;
+  order: number;
+  totalPanels: number;
+}
+
 export interface NarrationPanelInput {
   imageBuffer: Buffer;
   mimeType: string;
@@ -37,6 +45,7 @@ export interface TranslateTextsInput {
 
 export interface AiProviderStrategy {
   detectPanels(input: DetectPanelsInput): Promise<PanelBox[]>;
+  redetectPanelBox(input: RedetectPanelBoxInput): Promise<PanelBox>;
   generateNarration(input: GenerateNarrationInput): Promise<string[]>;
   translateTexts(input: TranslateTextsInput): Promise<string[]>;
 }

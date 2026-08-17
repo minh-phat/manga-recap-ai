@@ -71,6 +71,41 @@ class OpenRouterClient {
         }
         return parsed.panels;
     }
+    async redetectPanelBox({ imageBuffer, mimeType, previousBox, order, totalPanels, }) {
+        const messages = [
+            {
+                role: 'system',
+                content: 'You are a manga page layout analyzer. You previously detected panel bounding boxes for this page, ' +
+                    'but one of them was invalid (too small, or collapsed against an image edge). ' +
+                    'Look at the image again and return a corrected bounding box for that one panel only. ' +
+                    'Use NORMALIZED fractional coordinates in the range 0.0 to 1.0, relative to the image\'s own width and height, ' +
+                    'where x=0,y=0 is the top-left corner and x=1,y=1 is the bottom-right corner. ' +
+                    'Respond ONLY with JSON of the shape {"panel":{"x":number,"y":number,"width":number,"height":number}}.',
+            },
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'text',
+                        text: `This manga page has ${totalPanels} panels in reading order. ` +
+                            `Your previous (invalid) bounding box for panel ${order} was ` +
+                            `${JSON.stringify(previousBox)}. ` +
+                            'Look again carefully and return the corrected bounding box for that same panel.',
+                    },
+                    {
+                        type: 'image_url',
+                        image_url: { url: toDataUrl(imageBuffer, mimeType) },
+                    },
+                ],
+            },
+        ];
+        const raw = await this.chat(messages);
+        const parsed = JSON.parse(raw);
+        if (!parsed.panel || typeof parsed.panel !== 'object') {
+            throw new common_1.BadGatewayException('OpenRouter panel redetection returned no panel object');
+        }
+        return parsed.panel;
+    }
     async generateNarration({ panels, storySoFar, pageIndex, language, }) {
         const languageLabel = (0, tts_languages_1.resolveLanguageLabel)(language);
         const content = [
