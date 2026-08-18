@@ -11,6 +11,7 @@ export declare class PagesService {
     constructor(db: Db, r2: S3Client, configService: ConfigService);
     findAllByProject(projectId: string): Promise<Page[]>;
     findById(id: string): Promise<Page | null>;
-    create(projectId: string, file: Express.Multer.File): Promise<Page>;
+    createMany(projectId: string, files: Express.Multer.File[]): Promise<Page[]>;
+    reorder(projectId: string, pageIds: string[]): Promise<Page[]>;
     remove(projectId: string, pageId: string): Promise<void>;
 }

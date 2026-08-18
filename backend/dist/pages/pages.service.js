@@ -43,42 +43,65 @@ let PagesService = PagesService_1 = class PagesService {
     findById(id) {
         return this.collection.findOne({ _id: new mongodb_1.ObjectId(id) });
     }
-    async create(projectId, file) {
-        const nextIndex = await this.collection.countDocuments({
+    async createMany(projectId, files) {
+        const startIndex = await this.collection.countDocuments({
             projectId: new mongodb_1.ObjectId(projectId),
         });
-        let width = 0;
-        let height = 0;
-        try {
-            const dimensions = (0, image_size_1.imageSize)(file.buffer);
-            width = dimensions.width;
-            height = dimensions.height;
-        }
-        catch {
-        }
-        const extension = file.originalname.includes('.')
-            ? file.originalname.split('.').pop()
-            : 'jpg';
-        const key = `projects/${projectId}/pages/${(0, uuid_1.v4)()}.${extension}`;
-        await this.r2.send(new client_s3_1.PutObjectCommand({
-            Bucket: this.configService.get('R2_BUCKET_NAME'),
-            Key: key,
-            Body: file.buffer,
-            ContentType: file.mimetype,
+        const publicUrl = (this.configService.get('R2_PUBLIC_URL') ?? '').replace(/\/$/, '');
+        const pages = await Promise.all(files.map(async (file, i) => {
+            let width = 0;
+            let height = 0;
+            try {
+                const dimensions = (0, image_size_1.imageSize)(file.buffer);
+                width = dimensions.width;
+                height = dimensions.height;
+            }
+            catch {
+            }
+            const extension = file.originalname.includes('.')
+                ? file.originalname.split('.').pop()
+                : 'jpg';
+            const key = `projects/${projectId}/pages/${(0, uuid_1.v4)()}.${extension}`;
+            await this.r2.send(new client_s3_1.PutObjectCommand({
+                Bucket: this.configService.get('R2_BUCKET_NAME'),
+                Key: key,
+                Body: file.buffer,
+                ContentType: file.mimetype,
+            }));
+            return {
+                projectId: new mongodb_1.ObjectId(projectId),
+                pageIndex: startIndex + i + 1,
+                imageUrl: `${publicUrl}/${key}`,
+                width,
+                height,
+                panelCount: 0,
+                status: 'uploaded',
+                createdAt: new Date(),
+            };
         }));
-        const publicUrl = this.configService.get('R2_PUBLIC_URL') ?? '';
-        const page = {
-            projectId: new mongodb_1.ObjectId(projectId),
-            pageIndex: nextIndex + 1,
-            imageUrl: `${publicUrl.replace(/\/$/, '')}/${key}`,
-            width,
-            height,
-            panelCount: 0,
-            status: 'uploaded',
-            createdAt: new Date(),
-        };
-        const result = await this.collection.insertOne(page);
-        return { ...page, _id: result.insertedId };
+        const result = await this.collection.insertMany(pages);
+        return pages.map((page, i) => ({
+            ...page,
+            _id: result.insertedIds[i],
+        }));
+    }
+    async reorder(projectId, pageIds) {
+        const existingPages = await this.collection
+            .find({ projectId: new mongodb_1.ObjectId(projectId) })
+            .toArray();
+        const existingIds = new Set(existingPages.map((p) => p._id.toString()));
+        const requestedIds = new Set(pageIds);
+        if (existingIds.size !== requestedIds.size ||
+            pageIds.some((id) => !existingIds.has(id))) {
+            throw new common_1.BadRequestException('pageIds must match exactly the existing pages of this project');
+        }
+        await this.collection.bulkWrite(pageIds.map((id, idx) => ({
+            updateOne: {
+                filter: { _id: new mongodb_1.ObjectId(id), projectId: new mongodb_1.ObjectId(projectId) },
+                update: { $set: { pageIndex: idx + 1 } },
+            },
+        })));
+        return this.findAllByProject(projectId);
     }
     async remove(projectId, pageId) {
         const page = await this.collection.findOne({

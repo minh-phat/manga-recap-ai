@@ -12,6 +12,22 @@ import ListItemText from '@mui/material/ListItemText';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { api, ApiError, Page, PageStatus, Project, RecapJob, RECAP_LANGUAGES } from '@/lib/api';
 import { getToken, isAdmin } from '@/lib/auth';
 
@@ -60,6 +76,7 @@ export default function ProjectDetailPage() {
   const [language, setLanguage] = useState('vi-VN');
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,18 +110,45 @@ export default function ProjectDetailPage() {
   }, [router, load]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     setUploading(true);
     setUploadError(null);
     try {
-      const page = await api.uploadPage(projectId, file);
-      setPages((prev) => [...prev, page]);
+      const newPages = await api.uploadPages(projectId, files);
+      setPages((prev) => [...prev, ...newPages]);
     } catch (err) {
       setUploadError(err instanceof ApiError ? err.message : 'Không thể tải ảnh lên');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = pages.findIndex((p) => p._id === active.id);
+    const newIndex = pages.findIndex((p) => p._id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const previousPages = pages;
+    const newPages = arrayMove(pages, oldIndex, newIndex).map((p, i) => ({
+      ...p,
+      pageIndex: i + 1,
+    }));
+    setPages(newPages);
+
+    try {
+      const updatedPages = await api.reorderPages(
+        projectId,
+        newPages.map((p) => p._id),
+      );
+      setPages(updatedPages);
+    } catch (err) {
+      setPages(previousPages);
+      setUploadError(err instanceof ApiError ? err.message : 'Không thể sắp xếp lại trang');
     }
   }
 
@@ -218,6 +262,7 @@ export default function ProjectDetailPage() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleUpload}
                   disabled={uploading}
                   className="text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 disabled:opacity-50"
@@ -257,57 +302,105 @@ export default function ProjectDetailPage() {
                   </button>
                   {generateError && <p className="text-sm text-red-600">{generateError}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                  {pages.map((page) => (
-                  <div
-                    key={page._id}
-                    className={`overflow-hidden rounded-lg bg-white shadow-sm ring-1 ${selectedIds.includes(page._id) ? 'ring-blue-500' : 'ring-gray-100'}`}
-                  >
-                    <div className="relative">
-                      <img
-                        src={page.imageUrl}
-                        alt={`Trang ${page.pageIndex}`}
-                        className="h-40 w-full object-cover"
-                      />
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(page._id)}
-                        onChange={() => toggleSelect(page._id)}
-                        className="absolute top-2 left-2 h-5 w-5"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleDeletePage(page._id);
-                        }}
-                        className="absolute top-2 right-2 rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
-                      >
-                        Xoá
-                      </button>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={pages.map((p) => p._id)} strategy={rectSortingStrategy}>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                      {pages.map((page) => (
+                        <SortablePageCard
+                          key={page._id}
+                          page={page}
+                          selected={selectedIds.includes(page._id)}
+                          onToggleSelect={() => toggleSelect(page._id)}
+                          onDelete={() => void handleDeletePage(page._id)}
+                        />
+                      ))}
                     </div>
-                    <div className="p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900">
-                          Trang {page.pageIndex}
-                        </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[page.status]}`}
-                        >
-                          {STATUS_LABEL[page.status]}
-                        </span>
-                      </div>
-                      {page.panelCount > 0 && (
-                        <p className="mt-1 text-xs text-gray-400">{page.panelCount} panel</p>
-                      )}
-                    </div>
-                  </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               </>
             )}
           </>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SortablePageCard({
+  page,
+  selected,
+  onToggleSelect,
+  onDelete,
+}: {
+  page: Page;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: page._id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`overflow-hidden rounded-lg bg-white shadow-sm ring-1 ${selected ? 'ring-blue-500' : 'ring-gray-100'}`}
+    >
+      <div className="relative">
+        <img
+          src={page.imageUrl}
+          alt={`Trang ${page.pageIndex}`}
+          className="h-40 w-full object-cover"
+        />
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          className="absolute top-2 left-2 h-5 w-5"
+        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-2 right-2 rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
+        >
+          Xoá
+        </button>
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="absolute bottom-2 right-2 flex h-6 w-6 cursor-grab items-center justify-center rounded-md bg-white/90 text-gray-600 shadow active:cursor-grabbing"
+          aria-label="Kéo để sắp xếp lại"
+        >
+          <DragIndicatorIcon fontSize="small" />
+        </button>
+      </div>
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-900">Trang {page.pageIndex}</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[page.status]}`}
+          >
+            {STATUS_LABEL[page.status]}
+          </span>
+        </div>
+        {page.panelCount > 0 && (
+          <p className="mt-1 text-xs text-gray-400">{page.panelCount} panel</p>
+        )}
       </div>
     </div>
   );

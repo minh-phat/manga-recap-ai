@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   DeleteObjectCommand,
@@ -36,50 +42,90 @@ export class PagesService {
     return this.collection.findOne({ _id: new ObjectId(id) });
   }
 
-  async create(projectId: string, file: Express.Multer.File): Promise<Page> {
-    const nextIndex = await this.collection.countDocuments({
+  async createMany(
+    projectId: string,
+    files: Express.Multer.File[],
+  ): Promise<Page[]> {
+    const startIndex = await this.collection.countDocuments({
       projectId: new ObjectId(projectId),
     });
 
-    let width = 0;
-    let height = 0;
-    try {
-      const dimensions = imageSize(file.buffer);
-      width = dimensions.width;
-      height = dimensions.height;
-    } catch {
-      // keep width/height as 0 if the buffer can't be parsed
-    }
+    const publicUrl = (
+      this.configService.get<string>('R2_PUBLIC_URL') ?? ''
+    ).replace(/\/$/, '');
 
-    const extension = file.originalname.includes('.')
-      ? file.originalname.split('.').pop()
-      : 'jpg';
-    const key = `projects/${projectId}/pages/${uuid()}.${extension}`;
+    const pages: Omit<Page, '_id'>[] = await Promise.all(
+      files.map(async (file, i) => {
+        let width = 0;
+        let height = 0;
+        try {
+          const dimensions = imageSize(file.buffer);
+          width = dimensions.width;
+          height = dimensions.height;
+        } catch {
+          // keep width/height as 0 if the buffer can't be parsed
+        }
 
-    await this.r2.send(
-      new PutObjectCommand({
-        Bucket: this.configService.get<string>('R2_BUCKET_NAME'),
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
+        const extension = file.originalname.includes('.')
+          ? file.originalname.split('.').pop()
+          : 'jpg';
+        const key = `projects/${projectId}/pages/${uuid()}.${extension}`;
+
+        await this.r2.send(
+          new PutObjectCommand({
+            Bucket: this.configService.get<string>('R2_BUCKET_NAME'),
+            Key: key,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+          }),
+        );
+
+        return {
+          projectId: new ObjectId(projectId),
+          pageIndex: startIndex + i + 1,
+          imageUrl: `${publicUrl}/${key}`,
+          width,
+          height,
+          panelCount: 0,
+          status: 'uploaded' as const,
+          createdAt: new Date(),
+        };
       }),
     );
 
-    const publicUrl = this.configService.get<string>('R2_PUBLIC_URL') ?? '';
+    const result = await this.collection.insertMany(pages);
+    return pages.map((page, i) => ({
+      ...page,
+      _id: result.insertedIds[i],
+    }));
+  }
 
-    const page: Omit<Page, '_id'> = {
-      projectId: new ObjectId(projectId),
-      pageIndex: nextIndex + 1,
-      imageUrl: `${publicUrl.replace(/\/$/, '')}/${key}`,
-      width,
-      height,
-      panelCount: 0,
-      status: 'uploaded',
-      createdAt: new Date(),
-    };
+  async reorder(projectId: string, pageIds: string[]): Promise<Page[]> {
+    const existingPages = await this.collection
+      .find({ projectId: new ObjectId(projectId) })
+      .toArray();
 
-    const result = await this.collection.insertOne(page);
-    return { ...page, _id: result.insertedId };
+    const existingIds = new Set(existingPages.map((p) => p._id!.toString()));
+    const requestedIds = new Set(pageIds);
+    if (
+      existingIds.size !== requestedIds.size ||
+      pageIds.some((id) => !existingIds.has(id))
+    ) {
+      throw new BadRequestException(
+        'pageIds must match exactly the existing pages of this project',
+      );
+    }
+
+    await this.collection.bulkWrite(
+      pageIds.map((id, idx) => ({
+        updateOne: {
+          filter: { _id: new ObjectId(id), projectId: new ObjectId(projectId) },
+          update: { $set: { pageIndex: idx + 1 } },
+        },
+      })),
+    );
+
+    return this.findAllByProject(projectId);
   }
 
   async remove(projectId: string, pageId: string): Promise<void> {

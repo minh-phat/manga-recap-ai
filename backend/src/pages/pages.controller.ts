@@ -1,19 +1,22 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   Param,
+  Patch,
   ParseFilePipeBuilder,
   Post,
   Req,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService } from '../projects/projects.service';
+import { ReorderPagesDto } from './dto/reorder-pages.dto';
 import { PagesService } from './pages.service';
 
 interface AuthedRequest {
@@ -40,20 +43,30 @@ export class PagesController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(FilesInterceptor('files', 50, { storage: memoryStorage() }))
   async create(
     @Param('projectId') projectId: string,
     @Req() req: AuthedRequest,
-    @UploadedFile(
+    @UploadedFiles(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ })
         .addMaxSizeValidator({ maxSize: MAX_FILE_SIZE })
         .build(),
     )
-    file: Express.Multer.File,
+    files: Express.Multer.File[],
   ) {
     await this.projectsService.findOneByOwner(projectId, req.user.userId);
-    return this.pagesService.create(projectId, file);
+    return this.pagesService.createMany(projectId, files);
+  }
+
+  @Patch('reorder')
+  async reorder(
+    @Param('projectId') projectId: string,
+    @Req() req: AuthedRequest,
+    @Body() dto: ReorderPagesDto,
+  ) {
+    await this.projectsService.findOneByOwner(projectId, req.user.userId);
+    return this.pagesService.reorder(projectId, dto.pageIds);
   }
 
   @Delete(':pageId')

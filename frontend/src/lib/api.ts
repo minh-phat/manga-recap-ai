@@ -209,14 +209,20 @@ export const api = {
   getPagePanels: (projectId: string, pageId: string) =>
     request<PanelRecord[]>(`/projects/${projectId}/pages/${pageId}/panels`),
 
-  uploadPage: (projectId: string, file: File) => {
+  uploadPages: (projectId: string, files: File[]) => {
     const formData = new FormData();
-    formData.append('file', file);
-    return uploadRequest<Page>(`/projects/${projectId}/pages`, formData);
+    files.forEach((file) => formData.append('files', file));
+    return uploadRequest<Page[]>(`/projects/${projectId}/pages`, formData);
   },
 
   deletePage: (projectId: string, pageId: string) =>
     request<void>(`/projects/${projectId}/pages/${pageId}`, { method: 'DELETE' }),
+
+  reorderPages: (projectId: string, pageIds: string[]) =>
+    request<Page[]>(`/projects/${projectId}/pages/reorder`, {
+      method: 'PATCH',
+      body: JSON.stringify({ pageIds }),
+    }),
 
   createRecapJob: (projectId: string, pageIds: string[], language: string) =>
     request<RecapJob>(`/projects/${projectId}/recap-jobs`, {
