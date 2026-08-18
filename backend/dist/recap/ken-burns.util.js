@@ -1,15 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.pickKenBurnsEffect = pickKenBurnsEffect;
+exports.planKenBurnsEffect = planKenBurnsEffect;
 exports.kenBurnsFrameAt = kenBurnsFrameAt;
-const EFFECTS = [
-    'panLeft',
-    'panRight',
-    'panUp',
-    'panDown',
-    'zoomIn',
-    'zoomOut',
-];
+const FRAME_ASPECT_RATIO = 1280 / 720;
+const MIN_PAN_OVERFLOW_PERCENT = 15;
+const MAX_PAN_OVERFLOW_PERCENT = 70;
+const ZOOM_SCALE_DELTA = 0.18;
 function hashSeed(seed) {
     let hash = 0;
     for (let i = 0; i < seed.length; i += 1) {
@@ -17,38 +13,58 @@ function hashSeed(seed) {
     }
     return Math.abs(hash);
 }
-function pickKenBurnsEffect(seed) {
-    return EFFECTS[hashSeed(seed) % EFFECTS.length];
+function planKenBurnsEffect(seed, aspectRatio) {
+    const goingForward = hashSeed(seed) % 2 === 0;
+    const ri = aspectRatio && aspectRatio > 0 ? aspectRatio : FRAME_ASPECT_RATIO;
+    const verticalOverflow = (1 - ri / FRAME_ASPECT_RATIO) * 100;
+    const horizontalOverflow = (1 - FRAME_ASPECT_RATIO / ri) * 100;
+    if (verticalOverflow >= MIN_PAN_OVERFLOW_PERCENT) {
+        return {
+            effect: goingForward ? 'panDown' : 'panUp',
+            fit: 'width',
+            amplitudePercent: Math.min(verticalOverflow, MAX_PAN_OVERFLOW_PERCENT),
+        };
+    }
+    if (horizontalOverflow >= MIN_PAN_OVERFLOW_PERCENT) {
+        return {
+            effect: goingForward ? 'panRight' : 'panLeft',
+            fit: 'height',
+            amplitudePercent: Math.min(horizontalOverflow, MAX_PAN_OVERFLOW_PERCENT),
+        };
+    }
+    return {
+        effect: goingForward ? 'zoomIn' : 'zoomOut',
+        fit: 'cover',
+        amplitudePercent: 0,
+    };
 }
-const PAN_DISTANCE_PERCENT = 6;
-const ZOOM_SCALE_DELTA = 0.18;
-const BASE_SCALE = 1.12;
-function kenBurnsFrameAt(effect, progress) {
+function kenBurnsFrameAt(plan, progress) {
     const t = Math.min(1, Math.max(0, progress));
+    const { effect, amplitudePercent } = plan;
     switch (effect) {
-        case 'panLeft':
+        case 'panDown':
             return {
-                scale: BASE_SCALE,
-                translateXPercent: PAN_DISTANCE_PERCENT * (0.5 - t),
-                translateYPercent: 0,
-            };
-        case 'panRight':
-            return {
-                scale: BASE_SCALE,
-                translateXPercent: PAN_DISTANCE_PERCENT * (t - 0.5),
-                translateYPercent: 0,
+                scale: 1,
+                translateXPercent: 0,
+                translateYPercent: -amplitudePercent * t,
             };
         case 'panUp':
             return {
-                scale: BASE_SCALE,
+                scale: 1,
                 translateXPercent: 0,
-                translateYPercent: PAN_DISTANCE_PERCENT * (0.5 - t),
+                translateYPercent: -amplitudePercent * (1 - t),
             };
-        case 'panDown':
+        case 'panRight':
             return {
-                scale: BASE_SCALE,
-                translateXPercent: 0,
-                translateYPercent: PAN_DISTANCE_PERCENT * (t - 0.5),
+                scale: 1,
+                translateXPercent: -amplitudePercent * t,
+                translateYPercent: 0,
+            };
+        case 'panLeft':
+            return {
+                scale: 1,
+                translateXPercent: -amplitudePercent * (1 - t),
+                translateYPercent: 0,
             };
         case 'zoomIn':
             return {

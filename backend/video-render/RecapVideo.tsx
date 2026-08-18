@@ -9,6 +9,7 @@ export interface RecapVideoEntryInput {
   narrationText: string;
   audioUrl?: string;
   durationMs?: number;
+  aspectRatio?: number;
 }
 
 export type RecapVideoProps = Record<string, unknown> & {
@@ -28,6 +29,7 @@ export function RecapVideo({ entries, includeCaptions }: RecapVideoProps) {
           imageUrl={entry.imageUrl}
           narrationText={entry.narrationText}
           audioUrl={entry.audioUrl}
+          aspectRatio={entry.aspectRatio}
           includeCaptions={includeCaptions}
           from={timings[index].from}
           durationInFrames={timings[index].durationInFrames}

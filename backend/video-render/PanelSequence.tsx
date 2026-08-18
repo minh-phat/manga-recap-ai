@@ -2,7 +2,8 @@ import React from 'react';
 import { AbsoluteFill, Audio, Img, Sequence, useCurrentFrame, interpolate } from 'remotion';
 import {
   kenBurnsFrameAt,
-  pickKenBurnsEffect,
+  planKenBurnsEffect,
+  KenBurnsPlan,
 } from '../src/recap/ken-burns.util';
 
 export interface PanelSequenceProps {
@@ -10,9 +11,43 @@ export interface PanelSequenceProps {
   imageUrl: string;
   narrationText: string;
   audioUrl?: string;
+  aspectRatio?: number;
   includeCaptions: boolean;
   from: number;
   durationInFrames: number;
+}
+
+function kenBurnsImageStyle(
+  plan: KenBurnsPlan,
+  scale: number,
+  translateXPercent: number,
+  translateYPercent: number,
+): React.CSSProperties {
+  const base: React.CSSProperties = { position: 'absolute', top: 0, left: 0 };
+
+  if (plan.fit === 'width') {
+    return {
+      ...base,
+      width: '100%',
+      height: 'auto',
+      transform: `translateY(${translateYPercent}%)`,
+    };
+  }
+  if (plan.fit === 'height') {
+    return {
+      ...base,
+      width: 'auto',
+      height: '100%',
+      transform: `translateX(${translateXPercent}%)`,
+    };
+  }
+  return {
+    ...base,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transform: `scale(${scale})`,
+  };
 }
 
 function PanelFrame({
@@ -20,17 +55,21 @@ function PanelFrame({
   imageUrl,
   narrationText,
   audioUrl,
+  aspectRatio,
   includeCaptions,
   durationInFrames,
 }: Omit<PanelSequenceProps, 'from'>) {
   const frame = useCurrentFrame();
-  const effect = pickKenBurnsEffect(panelId);
+  const plan = React.useMemo(
+    () => planKenBurnsEffect(panelId, aspectRatio),
+    [panelId, aspectRatio],
+  );
   const progress = interpolate(frame, [0, durationInFrames], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
   const { scale, translateXPercent, translateYPercent } = kenBurnsFrameAt(
-    effect,
+    plan,
     progress,
   );
 
@@ -39,12 +78,7 @@ function PanelFrame({
       {audioUrl ? <Audio src={audioUrl} /> : null}
       <Img
         src={imageUrl}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${scale}) translate(${translateXPercent}%, ${translateYPercent}%)`,
-        }}
+        style={kenBurnsImageStyle(plan, scale, translateXPercent, translateYPercent)}
       />
       {includeCaptions && narrationText ? (
         <AbsoluteFill

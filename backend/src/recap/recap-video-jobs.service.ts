@@ -122,6 +122,10 @@ export class RecapVideoJobsService {
         narrationText: entry.narrationText,
         audioUrl: undefined as string | undefined,
         durationMs: undefined as number | undefined,
+        aspectRatio:
+          entry.bbox && entry.bbox.width > 0 && entry.bbox.height > 0
+            ? entry.bbox.width / entry.bbox.height
+            : undefined,
       }));
 
       await this.updateJob(jobObjectId, {

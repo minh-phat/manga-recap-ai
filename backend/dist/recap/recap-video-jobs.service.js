@@ -143,6 +143,9 @@ let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsServic
                 narrationText: entry.narrationText,
                 audioUrl: undefined,
                 durationMs: undefined,
+                aspectRatio: entry.bbox && entry.bbox.width > 0 && entry.bbox.height > 0
+                    ? entry.bbox.width / entry.bbox.height
+                    : undefined,
             }));
             await this.updateJob(jobObjectId, {
                 currentStep: 'Đang dịch nội dung...',
