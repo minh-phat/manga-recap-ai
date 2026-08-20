@@ -15,6 +15,8 @@ const tts_languages_1 = require("../tts-languages");
 class CreateRecapVideoJobDto {
     includeCaptions;
     language;
+    pitch;
+    rate;
 }
 exports.CreateRecapVideoJobDto = CreateRecapVideoJobDto;
 __decorate([
@@ -25,4 +27,18 @@ __decorate([
     (0, class_validator_1.IsIn)(tts_languages_1.SUPPORTED_LANGUAGE_CODES),
     __metadata("design:type", String)
 ], CreateRecapVideoJobDto.prototype, "language", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-50),
+    (0, class_validator_1.Max)(50),
+    __metadata("design:type", Number)
+], CreateRecapVideoJobDto.prototype, "pitch", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.5),
+    (0, class_validator_1.Max)(2),
+    __metadata("design:type", Number)
+], CreateRecapVideoJobDto.prototype, "rate", void 0);
 //# sourceMappingURL=create-recap-video-job.dto.js.map

@@ -87,6 +87,8 @@ export class RecapController {
       dto.includeCaptions,
       dto.language,
       req.user.userId,
+      dto.pitch,
+      dto.rate,
     );
   }
 

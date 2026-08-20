@@ -18,7 +18,7 @@ export declare class RecapVideoJobsService {
     constructor(db: Db, r2: S3Client, configService: ConfigService, recapScriptsService: RecapScriptsService, aiProviderFactory: AiProviderFactory, edgeTtsClient: EdgeTtsClient);
     findOne(id: string): Promise<RecapVideoJob>;
     findAllByScript(scriptId: string): Promise<RecapVideoJob[]>;
-    createJob(projectId: string, scriptId: string, includeCaptions: boolean, language: string, createdBy: string): Promise<RecapVideoJob>;
+    createJob(projectId: string, scriptId: string, includeCaptions: boolean, language: string, createdBy: string, pitch?: number, rate?: number): Promise<RecapVideoJob>;
     private updateJob;
     private getBundleServeUrl;
     private runJob;

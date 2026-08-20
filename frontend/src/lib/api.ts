@@ -180,6 +180,8 @@ export interface RecapVideoJob {
   scriptId: string;
   includeCaptions: boolean;
   language: string;
+  pitch?: number;
+  rate?: number;
   status: RecapVideoJobStatus;
   currentStep?: string;
   error?: string;
@@ -244,10 +246,12 @@ export const api = {
     scriptId: string,
     includeCaptions: boolean,
     language: string,
+    pitch?: number,
+    rate?: number,
   ) =>
     request<RecapVideoJob>(`/projects/${projectId}/recap-scripts/${scriptId}/video-jobs`, {
       method: 'POST',
-      body: JSON.stringify({ includeCaptions, language }),
+      body: JSON.stringify({ includeCaptions, language, pitch, rate }),
     }),
 
   getRecapVideoJob: (projectId: string, videoJobId: string) =>

@@ -18,6 +18,8 @@ interface VideoGeneratorProps {
 export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorProps) {
   const [includeCaptions, setIncludeCaptions] = useState(true);
   const [language, setLanguage] = useState('vi-VN');
+  const [pitch, setPitch] = useState(0);
+  const [rate, setRate] = useState(1);
   const [videoJob, setVideoJob] = useState<RecapVideoJob | null>(null);
   const [videos, setVideos] = useState<RecapVideoJob[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,14 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
   const handleGenerate = async () => {
     setError(null);
     try {
-      const created = await api.createRecapVideoJob(projectId, scriptId, includeCaptions, language);
+      const created = await api.createRecapVideoJob(
+        projectId,
+        scriptId,
+        includeCaptions,
+        language,
+        pitch,
+        rate,
+      );
       setVideoJob(created);
       void loadVideos();
       if (pollRef.current) clearInterval(pollRef.current);
@@ -103,6 +112,50 @@ export default function VideoGenerator({ projectId, scriptId }: VideoGeneratorPr
           ))}
         </select>
       </label>
+
+      <div className="mb-3">
+        <div className="mb-1 flex items-center justify-between text-sm text-gray-700">
+          <span>Cao độ giọng (trầm ↔ thanh)</span>
+          <span className="text-gray-500">
+            {pitch > 0 ? `+${pitch}%` : `${pitch}%`}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={-50}
+          max={50}
+          step={5}
+          value={pitch}
+          disabled={isBusy}
+          onChange={(e) => setPitch(Number(e.target.value))}
+          className="w-full"
+        />
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>Trầm</span>
+          <span>Thanh</span>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <div className="mb-1 flex items-center justify-between text-sm text-gray-700">
+          <span>Tốc độ đọc</span>
+          <span className="text-gray-500">{rate.toFixed(1)}x</span>
+        </div>
+        <input
+          type="range"
+          min={0.5}
+          max={2}
+          step={0.1}
+          value={rate}
+          disabled={isBusy}
+          onChange={(e) => setRate(Number(e.target.value))}
+          className="w-full"
+        />
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>Chậm</span>
+          <span>Nhanh</span>
+        </div>
+      </div>
 
       <button
         type="button"

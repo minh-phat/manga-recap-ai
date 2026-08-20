@@ -50,7 +50,7 @@ let RecapController = class RecapController {
     }
     async createVideoJob(projectId, scriptId, dto, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
-        return this.recapVideoJobsService.createJob(projectId, scriptId, dto.includeCaptions, dto.language, req.user.userId);
+        return this.recapVideoJobsService.createJob(projectId, scriptId, dto.includeCaptions, dto.language, req.user.userId, dto.pitch, dto.rate);
     }
     async findVideoJobs(projectId, scriptId, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);

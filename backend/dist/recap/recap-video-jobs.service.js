@@ -95,13 +95,15 @@ let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsServic
             .sort({ createdAt: -1 })
             .toArray();
     }
-    async createJob(projectId, scriptId, includeCaptions, language, createdBy) {
+    async createJob(projectId, scriptId, includeCaptions, language, createdBy, pitch, rate) {
         const now = new Date();
         const job = {
             projectId: new mongodb_1.ObjectId(projectId),
             scriptId: new mongodb_1.ObjectId(scriptId),
             includeCaptions,
             language,
+            pitch: pitch ?? 0,
+            rate: rate ?? 1,
             status: 'queued',
             createdBy: new mongodb_1.ObjectId(createdBy),
             createdAt: now,
@@ -163,11 +165,16 @@ let RecapVideoJobsService = RecapVideoJobsService_1 = class RecapVideoJobsServic
                 currentStep: 'Đang tạo giọng đọc...',
             });
             const voice = (0, tts_languages_1.resolveEdgeVoice)(job.language);
+            const pitch = job.pitch ?? 0;
+            const prosody = {
+                pitch: `${pitch >= 0 ? '+' : ''}${pitch}%`,
+                rate: job.rate ?? 1,
+            };
             for (const entry of entries) {
                 if (!entry.narrationText.trim()) {
                     continue;
                 }
-                const audioBuffer = await this.edgeTtsClient.synthesize(entry.narrationText, voice);
+                const audioBuffer = await this.edgeTtsClient.synthesize(entry.narrationText, voice, prosody);
                 const metadata = await (0, music_metadata_1.parseBuffer)(audioBuffer, 'audio/mpeg');
                 entry.durationMs = (metadata.format.duration ?? 0) * 1000;
                 const audioKey = `projects/${job.projectId.toString()}/recap-videos/audio/${(0, uuid_1.v4)()}.mp3`;

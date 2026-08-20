@@ -10,6 +10,7 @@ import { parseBuffer } from 'music-metadata';
 import { MONGO_DB } from '../database/database.providers';
 import { R2_CLIENT } from '../storage/r2.providers';
 import { AiProviderFactory } from '../ai-providers/ai-provider.factory';
+import { ProsodyOptions } from 'msedge-tts';
 import { EdgeTtsClient } from '../tts/edge-tts.client';
 import { RecapVideoJob } from './recap-video-job.entity';
 import { RecapScriptsService } from './recap-scripts.service';
@@ -58,6 +59,8 @@ export class RecapVideoJobsService {
     includeCaptions: boolean,
     language: string,
     createdBy: string,
+    pitch?: number,
+    rate?: number,
   ): Promise<RecapVideoJob> {
     const now = new Date();
     const job: Omit<RecapVideoJob, '_id'> = {
@@ -65,6 +68,8 @@ export class RecapVideoJobsService {
       scriptId: new ObjectId(scriptId),
       includeCaptions,
       language,
+      pitch: pitch ?? 0,
+      rate: rate ?? 1,
       status: 'queued',
       createdBy: new ObjectId(createdBy),
       createdAt: now,
@@ -149,6 +154,11 @@ export class RecapVideoJobsService {
       });
 
       const voice = resolveEdgeVoice(job.language);
+      const pitch = job.pitch ?? 0;
+      const prosody: ProsodyOptions = {
+        pitch: `${pitch >= 0 ? '+' : ''}${pitch}%`,
+        rate: job.rate ?? 1,
+      };
       for (const entry of entries) {
         if (!entry.narrationText.trim()) {
           continue;
@@ -156,6 +166,7 @@ export class RecapVideoJobsService {
         const audioBuffer = await this.edgeTtsClient.synthesize(
           entry.narrationText,
           voice,
+          prosody,
         );
         const metadata = await parseBuffer(audioBuffer, 'audio/mpeg');
         entry.durationMs = (metadata.format.duration ?? 0) * 1000;

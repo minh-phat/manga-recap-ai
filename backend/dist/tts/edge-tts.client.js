@@ -17,11 +17,11 @@ function sleep(ms) {
 }
 let EdgeTtsClient = EdgeTtsClient_1 = class EdgeTtsClient {
     logger = new common_1.Logger(EdgeTtsClient_1.name);
-    async synthesize(text, voiceName) {
+    async synthesize(text, voiceName, prosody) {
         let lastError;
         for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
             try {
-                return await this.synthesizeOnce(text, voiceName);
+                return await this.synthesizeOnce(text, voiceName, prosody);
             }
             catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
@@ -34,10 +34,10 @@ let EdgeTtsClient = EdgeTtsClient_1 = class EdgeTtsClient {
         }
         throw lastError;
     }
-    async synthesizeOnce(text, voiceName) {
+    async synthesizeOnce(text, voiceName, prosody) {
         const tts = new msedge_tts_1.MsEdgeTTS();
         await tts.setMetadata(voiceName, msedge_tts_1.OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
-        const { audioStream } = tts.toStream(text);
+        const { audioStream } = tts.toStream(text, prosody);
         try {
             const chunks = [];
             await new Promise((resolve, reject) => {

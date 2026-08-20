@@ -8,6 +8,8 @@ export interface RecapVideoJob {
   scriptId: ObjectId;
   includeCaptions: boolean;
   language: string;
+  pitch?: number;
+  rate?: number;
   status: RecapVideoJobStatus;
   currentStep?: string;
   error?: string;
