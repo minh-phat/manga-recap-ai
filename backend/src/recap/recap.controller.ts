@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -11,6 +12,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectsService } from '../projects/projects.service';
 import { CreateRecapJobDto } from './dto/create-recap-job.dto';
 import { CreateRecapVideoJobDto } from './dto/create-recap-video-job.dto';
+import { UpdateRecapScriptEntryDto } from './dto/update-recap-script-entry.dto';
 import { RecapJobsService } from './recap-jobs.service';
 import { RecapScriptsService } from './recap-scripts.service';
 import { RecapVideoJobsService } from './recap-video-jobs.service';
@@ -71,6 +73,22 @@ export class RecapController {
   ) {
     await this.projectsService.findOneByOwner(projectId, req.user.userId);
     return this.recapScriptsService.findOne(scriptId);
+  }
+
+  @Patch('recap-scripts/:scriptId/entries/:panelId')
+  async updateScriptEntry(
+    @Param('projectId') projectId: string,
+    @Param('scriptId') scriptId: string,
+    @Param('panelId') panelId: string,
+    @Body() dto: UpdateRecapScriptEntryDto,
+    @Req() req: AuthedRequest,
+  ) {
+    await this.projectsService.findOneByOwner(projectId, req.user.userId);
+    return this.recapScriptsService.updateEntryNarration(
+      scriptId,
+      panelId,
+      dto.narrationText,
+    );
   }
 
   @Post('recap-scripts/:scriptId/video-jobs')

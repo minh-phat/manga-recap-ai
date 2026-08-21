@@ -26,6 +26,8 @@ export default function RecapJobPage() {
   const [pagesById, setPagesById] = useState<Map<string, Page>>(new Map());
   const [failedPanels, setFailedPanels] = useState<PanelRecord[]>([]);
   const [selectedPanelId, setSelectedPanelId] = useState<string | null>(null);
+  const [editingPanelId, setEditingPanelId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
   const [selectedFailedAttempt, setSelectedFailedAttempt] = useState<{
     panel: PanelRecord;
     attemptIndex: number;
@@ -76,6 +78,17 @@ export default function RecapJobPage() {
     };
   }, [router, poll]);
 
+  async function handleSaveNarration(panelId: string, text: string) {
+    if (!script) return;
+    try {
+      const updated = await api.updateRecapScriptEntry(projectId, script._id, panelId, text);
+      setScript(updated);
+      setEditingPanelId(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Không thể lưu nội dung');
+    }
+  }
+
   const selectedEntry = script?.entries.find((entry) => entry.panelId === selectedPanelId) ?? null;
   const selectedPage = selectedEntry ? pagesById.get(selectedEntry.pageId) : undefined;
 
@@ -114,11 +127,11 @@ export default function RecapJobPage() {
             <div className="space-y-6">
               {script.entries.map((entry) => {
                 const isSelected = entry.panelId === selectedPanelId;
+                const isEditing = entry.panelId === editingPanelId;
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={entry.panelId}
-                    onClick={() => setSelectedPanelId(entry.panelId)}
+                    onClick={() => !isEditing && setSelectedPanelId(entry.panelId)}
                     className={`flex w-full gap-4 rounded-lg bg-white p-4 text-left shadow-sm ring-1 transition ${
                       isSelected ? 'ring-2 ring-blue-500' : 'ring-gray-100 hover:ring-gray-300'
                     }`}
@@ -128,11 +141,51 @@ export default function RecapJobPage() {
                       alt={`Panel ${entry.order}`}
                       className="h-40 w-40 flex-shrink-0 rounded-md object-cover"
                     />
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="mb-1 text-xs font-medium text-gray-400">Panel {entry.order}</p>
-                      <p className="text-sm text-gray-800">{entry.narrationText}</p>
+                      {isEditing ? (
+                        <div onClick={(e) => e.stopPropagation()} className="space-y-2">
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            rows={3}
+                            className="w-full rounded-md border border-gray-300 p-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveNarration(entry.panelId, editingText)}
+                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                            >
+                              Lưu
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingPanelId(null)}
+                              className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm text-gray-800">{entry.narrationText}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingPanelId(entry.panelId);
+                              setEditingText(entry.narrationText);
+                            }}
+                            className="flex-shrink-0 text-xs font-medium text-blue-600 hover:underline"
+                          >
+                            Sửa
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

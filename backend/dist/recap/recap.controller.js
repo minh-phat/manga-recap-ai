@@ -18,6 +18,7 @@ const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const projects_service_1 = require("../projects/projects.service");
 const create_recap_job_dto_1 = require("./dto/create-recap-job.dto");
 const create_recap_video_job_dto_1 = require("./dto/create-recap-video-job.dto");
+const update_recap_script_entry_dto_1 = require("./dto/update-recap-script-entry.dto");
 const recap_jobs_service_1 = require("./recap-jobs.service");
 const recap_scripts_service_1 = require("./recap-scripts.service");
 const recap_video_jobs_service_1 = require("./recap-video-jobs.service");
@@ -47,6 +48,10 @@ let RecapController = class RecapController {
     async findScript(projectId, scriptId, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
         return this.recapScriptsService.findOne(scriptId);
+    }
+    async updateScriptEntry(projectId, scriptId, panelId, dto, req) {
+        await this.projectsService.findOneByOwner(projectId, req.user.userId);
+        return this.recapScriptsService.updateEntryNarration(scriptId, panelId, dto.narrationText);
     }
     async createVideoJob(projectId, scriptId, dto, req) {
         await this.projectsService.findOneByOwner(projectId, req.user.userId);
@@ -97,6 +102,17 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], RecapController.prototype, "findScript", null);
+__decorate([
+    (0, common_1.Patch)('recap-scripts/:scriptId/entries/:panelId'),
+    __param(0, (0, common_1.Param)('projectId')),
+    __param(1, (0, common_1.Param)('scriptId')),
+    __param(2, (0, common_1.Param)('panelId')),
+    __param(3, (0, common_1.Body)()),
+    __param(4, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, update_recap_script_entry_dto_1.UpdateRecapScriptEntryDto, Object]),
+    __metadata("design:returntype", Promise)
+], RecapController.prototype, "updateScriptEntry", null);
 __decorate([
     (0, common_1.Post)('recap-scripts/:scriptId/video-jobs'),
     __param(0, (0, common_1.Param)('projectId')),

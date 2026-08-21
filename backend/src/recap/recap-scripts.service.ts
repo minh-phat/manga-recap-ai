@@ -30,4 +30,20 @@ export class RecapScriptsService {
     }
     return script;
   }
+
+  async updateEntryNarration(
+    scriptId: string,
+    panelId: string,
+    narrationText: string,
+  ): Promise<RecapScript> {
+    const result = await this.collection.findOneAndUpdate(
+      { _id: new ObjectId(scriptId), 'entries.panelId': new ObjectId(panelId) },
+      { $set: { 'entries.$.narrationText': narrationText } },
+      { returnDocument: 'after' },
+    );
+    if (!result) {
+      throw new NotFoundException('Recap script hoặc panel không tồn tại');
+    }
+    return result;
+  }
 }

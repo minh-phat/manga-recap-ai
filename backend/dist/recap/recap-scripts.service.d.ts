@@ -7,4 +7,5 @@ export declare class RecapScriptsService {
     create(script: Omit<RecapScript, '_id'>): Promise<RecapScript>;
     findAllByProject(projectId: string): Promise<RecapScript[]>;
     findOne(id: string): Promise<RecapScript>;
+    updateEntryNarration(scriptId: string, panelId: string, narrationText: string): Promise<RecapScript>;
 }

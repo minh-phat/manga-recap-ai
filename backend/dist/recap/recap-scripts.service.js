@@ -40,6 +40,13 @@ let RecapScriptsService = class RecapScriptsService {
         }
         return script;
     }
+    async updateEntryNarration(scriptId, panelId, narrationText) {
+        const result = await this.collection.findOneAndUpdate({ _id: new mongodb_1.ObjectId(scriptId), 'entries.panelId': new mongodb_1.ObjectId(panelId) }, { $set: { 'entries.$.narrationText': narrationText } }, { returnDocument: 'after' });
+        if (!result) {
+            throw new common_1.NotFoundException('Recap script hoặc panel không tồn tại');
+        }
+        return result;
+    }
 };
 exports.RecapScriptsService = RecapScriptsService;
 exports.RecapScriptsService = RecapScriptsService = __decorate([

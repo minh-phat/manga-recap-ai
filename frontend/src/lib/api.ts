@@ -241,6 +241,17 @@ export const api = {
   getRecapScript: (projectId: string, scriptId: string) =>
     request<RecapScript>(`/projects/${projectId}/recap-scripts/${scriptId}`),
 
+  updateRecapScriptEntry: (
+    projectId: string,
+    scriptId: string,
+    panelId: string,
+    narrationText: string,
+  ) =>
+    request<RecapScript>(
+      `/projects/${projectId}/recap-scripts/${scriptId}/entries/${panelId}`,
+      { method: 'PATCH', body: JSON.stringify({ narrationText }) },
+    ),
+
   createRecapVideoJob: (
     projectId: string,
     scriptId: string,
